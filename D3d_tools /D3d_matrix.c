@@ -592,7 +592,6 @@ int D3d_view (double view[4][4],  double view_inverse[4][4],
 
   // //rotate around the x axis so that coi'' is on the positive z-axis 
   double r = sqrt((p*p) + (tcoi[1] * tcoi[1]));
-  printf("%lf\n",r );
   D3d_cs_rotate_x(temp, temp_inverse, p/r, tcoi[1]/r);
 
  
@@ -609,14 +608,14 @@ int D3d_view (double view[4][4],  double view_inverse[4][4],
   // //rotate about the z-axis so that up''' is in y-z plane 
   
   double hyp = sqrt((tup[1] * tup[1]) + (tup[0] * tup[0]));
-  D3d_cs_rotate_z(temp, temp_inverse, tup[1]/hyp, -tup[0]/hyp);
+  D3d_cs_rotate_z(temp, temp_inverse, tup[1]/hyp, tup[0]/hyp);
 
 
-   D3d_mat_mult(view,  temp,view);
+  D3d_mat_mult(view,  temp,view);
   D3d_mat_mult(view_inverse, view_inverse,temp_inverse);
 
   
-  return 0;
+  return 1;
 }
 
 

@@ -47,8 +47,6 @@ void findPoint(double m[4][4], double point[3], double p[3], double slope, doubl
 		point[0] = point[0] + 10;
 		point[1] = (point[0] * invslope ) + c;
 	}
-			
-	// G_line(points[i][0], points[i][1], point[0], point[1]);
 }
 
 void circle(double points[][3], 
@@ -97,7 +95,7 @@ void sum4(double points[][3],
 	for(i = 0; i< n ; i++){
 		points[i][2] = 0;
 		double u = start + (i*inc);
-		double compare = fixPi(start + (i*inc));
+		double compare = fixPi(u);
 		if(compare < M_PI/2 && compare > 0 ){
 		points[i][0] = sqrt(absd(cos(u)));
 		points[i][1] = sqrt(absd(sin(u)));
@@ -113,7 +111,9 @@ void sum4(double points[][3],
 		}
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 		if(i%(n/100) == 0){
-			double slope = ((sy/2)*(pow(sin(u),-.5))*cos(u))/(((sx/2)*(pow(cos(u),-.5))*-cos(u)));
+			double dx = (-sin(u)*cos(u))/(2*pow(absd(cos(u)),3/2));
+			double dy = (sin(u)*cos(u))/(2*pow(absd(sin(u)),3/2));
+			double slope = (sy*dy)/(sx*dx);
 			double point[3];
 			findPoint(m,point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
@@ -138,22 +138,34 @@ void square(double points[][3],
 
 	
 	for(i = 0; i< n ; i++){
-		double compare = fixPi(start + (i*inc));
+		double u = start + (i*inc);
+		double compare = fixPi(u);
+		double slope;
 		if(compare < .5 * M_PI){
-		points[i][0] = pow(cos(start + (i*inc)),2);
-		points[i][1] = pow(sin(start + (i*inc)),2);
+		points[i][0] = pow(cos(u),2);
+		points[i][1] = pow(sin(u),2);
+		slope = -sy/sx;
 		}else if(compare < M_PI ){
-		points[i][0] = -pow(cos(start + (i*inc)),2);
-		points[i][1] = pow(sin(start + (i*inc)),2);
+		points[i][0] = -pow(cos(u),2);
+		points[i][1] = pow(sin(u),2);
+		slope = sy/sx;
 		}else if(compare < (M_PI *3)/2 ){
-		points[i][0] = -pow(cos(start + (i*inc)),2);
-		points[i][1] = -pow(sin(start + (i*inc)),2);
+		points[i][0] = -pow(cos(u),2);
+		points[i][1] = -pow(sin(u),2);
+		slope = -sy/sx;
 		}else{
-		points[i][0] = pow(cos(start + (i*inc)),2);
-		points[i][1] = -pow(sin(start + (i*inc)),2);
+		points[i][0] = pow(cos(u),2);
+		points[i][1] = -pow(sin(u),2);
+		slope = sy/sx;
 		}
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
+
+		if(i%(n/100) == 0){
+			double point[3];
+			findPoint(m,point, points[i], slope, u);
+			G_line(points[i][0], points[i][1], point[0], point[1]);
+		}
 	}
 }
 
@@ -171,21 +183,29 @@ void astroid(double points[][3],
 	makemat(m, minv, sx, sy, rz, tx, ty); 
 	
 	for(i = 0; i< n ; i++){
-		if(fixPi(start + (i*inc)) < M_PI/2 ){
-		points[i][0] = pow(cos(start + (i*inc)),4);
-		points[i][1] = pow(sin(start + (i*inc)),4);
-		}else if(fixPi(start + (i*inc)) < M_PI ){
-		points[i][0] = -pow(cos(start + (i*inc)),4);
-		points[i][1] = pow(sin(start + (i*inc)),4);
-		}else if(fixPi(start + (i*inc)) < (M_PI *3)/2 ){
-		points[i][0] = -pow(cos(start + (i*inc)),4);
-		points[i][1] = -pow(sin(start + (i*inc)),4);
+		double u = start + (i*inc);
+		if(fixPi(u) < M_PI/2 ){
+		points[i][0] = pow(cos(u),4);
+		points[i][1] = pow(sin(u),4);
+		}else if(fixPi(u) < M_PI ){
+		points[i][0] = -pow(cos(u),4);
+		points[i][1] = pow(sin(u),4);
+		}else if(fixPi(u) < (M_PI *3)/2 ){
+		points[i][0] = -pow(cos(u),4);
+		points[i][1] = -pow(sin(u),4);
 		}else{
-		points[i][0] = pow(cos(start + (i*inc)),4);
-		points[i][1] = -pow(sin(start + (i*inc)),4);
+		points[i][0] = pow(cos(u),4);
+		points[i][1] = -pow(sin(u),4);
 		}
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
+	
+	if(i%(n/100) == 0){
+			double slope = -pow(tan(u),2);//(sy*4*pow(sin(u),3)*cos(u))/(sx*4*pow(cos(u),3)*-sin(u));
+			double point[3];
+			findPoint(m,point, points[i], slope, u);
+			G_line(points[i][0], points[i][1], point[0], point[1]);
+		}
 	}
 }
 
@@ -202,11 +222,18 @@ void hyperbola(double points[][3],
 	double m[4][4], minv[4][4];
 	makemat(m, minv, sx, sy, rz, tx, ty); 
 	
-	for(i = 0; i< n ; i+=2){
-		points[i][0] = cosh(start + (i*inc));
-		points[i][1] = sinh(start + (i*inc));
+	for(i = 0; i< n ; i++){
+		double u = start + (i*inc);
+		points[i][0] = cosh(u);
+		points[i][1] = sinh(u);
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
+		if(i%(n/100) == 0){
+			double slope = (sy*cosh(u))/(sx*sinh(u));
+			double point[3];
+			findPoint(m,point, points[i], slope, u);
+			G_line(points[i][0], points[i][1], point[0], point[1]);
+		}
 	}
 }
 
@@ -224,10 +251,18 @@ void parabola(double points[][3],
 	makemat(m, minv, sx, sy, rz, tx, ty); 
 	
 	for(i = 0; i< n ; i++){
-		points[i][0] = start + (i*inc);
-		points[i][1] = pow(start + (i*inc), 2);
+		double u = start + (i*inc);
+		points[i][0] = u;
+		points[i][1] = pow(u, 2);
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
+
+		if(i%(n/100) == 0){
+			double slope = (sy*2*u)/sx;
+			double point[3];
+			findPoint(m,point, points[i], slope, u);
+			G_line(points[i][0], points[i][1], point[0], point[1]);
+		}
 	}
 }
 
@@ -245,10 +280,18 @@ void lemon(double points[][3],
 	makemat(m, minv, sx, sy, rz, tx, ty); 
 	
 	for(i = 0; i< n ; i++){
-		points[i][0] = pow(cos(start + (i*inc)),3);
-		points[i][1] = sin(start + (i*inc));
+		double u = start + (i*inc);
+		points[i][0] = pow(cos(u),3);
+		points[i][1] = sin(u);
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
+
+		if(i%(n/100) == 0){
+			double slope = ((sy * cos(u))/(sx*3*pow(cos(u),2)*-sin(u));)
+			double point[3];
+			findPoint(m,point, points[i], slope, u);
+			G_line(points[i][0], points[i][1], point[0], point[1]);
+		}
 	}
 }
 
@@ -282,43 +325,43 @@ int main(){
 	drawpoints(points,n);
 	G_wait_key();
 
-	// G_rgb(0,0,0) ;
- //    G_clear();
- //    G_rgb(0,1,0);
+	G_rgb(0,0,0) ;
+    G_clear();
+    G_rgb(0,1,0);
 
- //    square(points,n, 0 , 2 * M_PI, 150,100, 0, 500,500);
-	// drawpoints(points,n);
-	// G_wait_key();
+    square(points,n, 0 , 2 * M_PI, 150,100, 0, 500,500);
+	drawpoints(points,n);
+	G_wait_key();
 
-	// G_rgb(0,0,0) ;
- //    G_clear();
- //    G_rgb(0,1,0);
+	G_rgb(0,0,0) ;
+    G_clear();
+    G_rgb(0,1,0);
 
- //    astroid(points,n, 0 , 2 * M_PI, 80,40,45, 500,300);
-	// drawpoints(points,n);
-	// G_wait_key();
+    astroid(points,n, 0 , 2 * M_PI, 180,140,45, 500,300);
+	drawpoints(points,n);
+	G_wait_key();
 
-	// G_rgb(0,0,0) ;
- //    G_clear();
- //    G_rgb(0,1,0);
+	G_rgb(0,0,0) ;
+    G_clear();
+    G_rgb(0,1,0);
 
- //    hyperbola(points,n, -1 , 2 , 100,100, 0, 250,250);
-	// drawpoints(points,n);
-	// G_wait_key();
+    hyperbola(points,n, -1 , 2 , 100,100, 0, 250,250);
+	drawpoints(points,n);
+	G_wait_key();
 
-	// G_rgb(0,0,0) ;
- //    G_clear();
- //    G_rgb(0,1,0);
+	G_rgb(0,0,0) ;
+    G_clear();
+    G_rgb(0,1,0);
 
- //    parabola(points,n, -1 , 2 , 150,50, 60, 250,250);
-	// drawpoints(points,n);
-	// G_wait_key();
+    parabola(points,n, -1 , 2 , 150,50, 60, 250,250);
+	drawpoints(points,n);
+	G_wait_key();
 
-	// G_rgb(0,0,0) ;
- //    G_clear();
- //    G_rgb(0,1,0);
+	G_rgb(0,0,0) ;
+    G_clear();
+    G_rgb(0,1,0);
 
- //    lemon(points,n, -1 , 2 * M_PI, 150,150, 60, 600,150);
-	// drawpoints(points,n);
-	// G_wait_key();
+    lemon(points,n, -1 , 2 * M_PI, 150,150, 60, 600,150);
+	drawpoints(points,n);
+	G_wait_key();
 }

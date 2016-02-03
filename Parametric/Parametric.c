@@ -30,14 +30,13 @@ void makemat(double m[4][4], double minv[4][4], double sx, double sy, double rz,
 	D3d_make_movement_sequence_matrix(m,minv, num, tlist, plist) ;
 }
 
-void findPoint(double m[4][4], double point[3], double p[3], double slope, double u){
+void findPoint(double point[3], double p[3], double slope, double u){
 	double ident[4][4];
 	D3d_make_identity(ident);
 	D3d_mat_mult_pt(point,  ident,  p) ;
 	double invslope = -1/slope;
 	double c = point[1] - (invslope * point[0]);
 	if(fixPi(u)==M_PI/2){
-		point[0] = point[0];
 		point[1] +=100;
 	}
 	else if(fixPi(u) >= .5 * M_PI && fixPi(u) <= 1.5 * M_PI){
@@ -70,10 +69,10 @@ void circle(double points[][3],
 
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 
-		if(i%(n/100) == 0){
+		if(i%(n/50) == 0){
 			double slope = (sy * cos(u))/(-sx * sin(u));
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 	}
@@ -110,12 +109,13 @@ void sum4(double points[][3],
 		points[i][1] = -sqrt(absd(sin(u)));
 		}
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
-		if(i%(n/100) == 0){
-			double dx = (-sin(u)*cos(u))/(2*pow(absd(cos(u)),3/2));
-			double dy = (sin(u)*cos(u))/(2*pow(absd(sin(u)),3/2));
+
+		if(i%(n/50) == 0){
+			double dx = -sin(u) / (2 * sqrt(fabs(cos(u))));
+			double dy = cos(u)/(2*sqrt(fabs(sin(u))));
 			double slope = (sy*dy)/(sx*dx);
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 
@@ -161,9 +161,9 @@ void square(double points[][3],
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 
-		if(i%(n/100) == 0){
+		if(i%(n/50) == 0){
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 	}
@@ -200,10 +200,12 @@ void astroid(double points[][3],
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 	
-	if(i%(n/100) == 0){
-			double slope = -pow(tan(u),2);//(sy*4*pow(sin(u),3)*cos(u))/(sx*4*pow(cos(u),3)*-sin(u));
+	if(i%(n/50) == 0){
+			double dx = -4*(pow(cos(u),3))*sin(u);
+			double dy = 4*(pow(sin(u),3))*cos(u);
+			double slope = (sy*dy)/(sx*dx);
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 	}
@@ -228,11 +230,17 @@ void hyperbola(double points[][3],
 		points[i][1] = sinh(u);
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
-		if(i%(n/100) == 0){
+		if(i%(n/50) == 0){
 			double slope = (sy*cosh(u))/(sx*sinh(u));
-			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			double point[3];double ident[4][4];
+			D3d_make_identity(ident);
+			D3d_mat_mult_pt(point,  ident,  points[i]) ;
+			double invslope = -1/slope;
+			double c = point[1] - (invslope * point[0]);
+			point[0] = point[0] + 10;
+			point[1] = (point[0] * invslope ) + c;		
 			G_line(points[i][0], points[i][1], point[0], point[1]);
+			
 		}
 	}
 }
@@ -257,10 +265,10 @@ void parabola(double points[][3],
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 
-		if(i%(n/100) == 0){
+		if(i%(n/50) == 0){
 			double slope = (sy*2*u)/sx;
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 	}
@@ -286,10 +294,10 @@ void lemon(double points[][3],
 		points[i][2] = 0;
 		D3d_mat_mult_pt(points[i],  m,  points[i]) ;
 
-		if(i%(n/100) == 0){
-			double slope = ((sy * cos(u))/(sx*3*pow(cos(u),2)*-sin(u));)
+		if(i%(n/50) == 0){
+			double slope = ((cos(u))/(3*pow(cos(u),2)*-sin(u)));
 			double point[3];
-			findPoint(m,point, points[i], slope, u);
+			findPoint(point, points[i], slope, u);
 			G_line(points[i][0], points[i][1], point[0], point[1]);
 		}
 	}
@@ -301,6 +309,10 @@ void drawpoints(double points[][3], int n){
 		G_point(points[i][0], points[i][1]);
 	}
 }
+
+// void plot(double start, double end, double (*func)(double)(*double)){
+	
+// }
 
 int main(){
 
@@ -321,7 +333,7 @@ int main(){
     G_clear();
     G_rgb(0,1,0);
 
-    sum4(points,n, .5 * M_PI , 1.75 * M_PI, 30,60, 0, 300,300);
+    sum4(points,n, .5 * M_PI, 1.75 * M_PI, 30,60, 0, 300,300);
 	drawpoints(points,n);
 	G_wait_key();
 

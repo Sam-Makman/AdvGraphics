@@ -50,8 +50,8 @@ void plot(double start, double end, double m[4][4], int (*func)(double rad, doub
 			tp[0] +=  10;
 			tp[1] = tp[1] + (slope*10);
 			int sign =1;
-			
-			if(dist(center, points) < dist(tp,center) ){
+			double dir = (points[0] - center[0]) / (points[1] - center[1]);
+			if(dir * slope > 0){
 				G_line(points[0] , points[1] ,points[0] + 10, (points[1] ) + (slope*10));
 				// printf("x = %lf y = %lf\n", tp[0], tp[1]);
 				// printf("further\n");

@@ -70,9 +70,7 @@ void plot(double start, double end, double m[4][4], int (*func)(double rad, doub
 
 			make_unit_vector(slope);
 
-			
-			
-				G_line(point[0] , point[1] ,point[0] - (slope[0]*10), (point[1] ) - (slope[1]*10));
+			G_line(point[0] , point[1] ,point[0] - (slope[0]*10), (point[1] ) - (slope[1]*10));
 		}
 	}	
 } 

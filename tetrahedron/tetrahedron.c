@@ -314,7 +314,6 @@ int init_scene (int frame_number)
   coi[2] = ccz ;
 
   path (frame_number + 1, up) ;
-
   // printf("eye = %lf %lf %lf\n",eye[0],eye[1],eye[2]) ;
   // printf("coi = %lf %lf %lf\n",coi[0],coi[1],coi[2]) ;
   // printf("up  = %lf %lf %lf\n",up[0],up[1],up[2]) ;
@@ -346,23 +345,89 @@ int init_scene (int frame_number)
   
   // make points
 
-  // for(k=0; k<4;k++){
-  //   makemat(m, minv, brad, brad, brad, 0,0,0,xcen[k],ycen[k], zcen[k]);
-  //   plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, sphere );
-  //   D3d_make_identity(m);
-  //   D3d_make_identity(minv);
-  // }
-  // //make center of mass
-  // nodeRgb[2]=1;
-  // makemat(m, minv, ccr, ccr, ccr, 0,0,0,ccx,ccy, ccz);
-  // plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, sphere );
-
-
+  for(k=0; k<4;k++){
+    makemat(m, minv, brad, brad, brad, 0,0,0,xcen[k],ycen[k], zcen[k]);
+    plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, sphere );
     D3d_make_identity(m);
     D3d_make_identity(minv);
-    makemat(m, minv, 1, 1, 1, 0,0,0, 0,0, 1);
-    plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, hyperboloid );
+  }
+  //make center of mass
+  nodeRgb[2]=1;
+  makemat(m, minv, ccr, ccr, ccr, 0,0,0,ccx,ccy, ccz);
+  plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, sphere );
+nodeRgb[0]=0;
+int f;
+for(k=0;k<4;k++){
+    nodeRgb[0] = 0;
+  nodeRgb[1] = 1;
+  nodeRgb[2] = 0;
+  for(f=0;f<4;f++){
+    if(f==k){
+      continue;
+    }
+    D3d_make_identity(m);
+    D3d_make_identity(minv);
+    
+    double teye[3], tcoi[3], tup[3];
 
+    teye[0] = xcen[k];
+    teye[1] = ycen[k];
+    teye[2] = zcen[k];
+
+    tcoi[0] = xcen[f];
+    tcoi[1] = ycen[f];
+    tcoi[2] = zcen[f];
+
+    tup[0] = xcen[k];
+    tup[1] = ycen[k]+1;
+    tup[2] = zcen[k];
+
+    D3d_scale(m,minv, .03,.8,.03);
+    D3d_rotate_x(m,minv,M_PI/2);
+    D3d_translate(m,minv,0,0,1);
+    // makemat(m, minv, brad, brad, brad, 0,0,0, 0,0,1 );
+
+    double n[4][4], ninv[4][4];
+
+    D3d_view(n,ninv, teye, tcoi, tup);
+
+    D3d_mat_mult(m,ninv,m);
+
+    plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, hyperboloid );
+}
+  nodeRgb[0] = 1;
+  nodeRgb[1] = 1;
+  nodeRgb[2] = 1;
+    D3d_make_identity(m);
+    D3d_make_identity(minv);
+    
+    double teye[3], tcoi[3], tup[3];
+
+    teye[0] = ccx;
+    teye[1] = ccy;
+    teye[2] = ccz;
+
+    tcoi[0] = xcen[k];
+    tcoi[1] = ycen[k];
+    tcoi[2] = zcen[k];
+
+    tup[0] = ccx;
+    tup[1] = ccy+1;
+    tup[2] = ccz;
+
+    D3d_scale(m,minv, .03,.5,.03);
+    D3d_rotate_x(m,minv,M_PI/2);
+    D3d_translate(m,minv,0,0,.5);
+    // makemat(m, minv, brad, brad, brad, 0,0,0, 0,0,1 );
+
+    double n[4][4], ninv[4][4];
+
+    D3d_view(n,ninv, teye, tcoi, tup);
+
+    D3d_mat_mult(m,ninv,m);
+
+    plot(0, 2 * M_PI, -1, 1, nodeRgb, m, V, eye, hyperboloid );
+}
 printf("frame number %d \n",frame_number );
 }
 
@@ -381,9 +446,8 @@ int main(){
 
 
   int i;
-  for(i= 0; i < 1; i++){
+  for(i= 0; i < 73; i++){
     init_scene(i);
-    G_wait_key();
     char filename[100];
     sprintf(filename, "%s%04d.xwd", prefix, i);
     G_save_image_to_file(filename);

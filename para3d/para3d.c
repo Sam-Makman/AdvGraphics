@@ -17,7 +17,11 @@ double zbuff[700][700];
 
 /**===================================================================================================*/
 
-
+int hyperboloid(double u, double v, double xyz[3]){
+  xyz[0] = sqrt(1+(v*v))*cos(u);
+  xyz[1] = v;
+  xyz[2] = sqrt(1+(v*v))*sin(u);
+}
 
 int sgn(double val){
 	if(val > 0) return 1;
@@ -189,8 +193,8 @@ void plot(double ustart, double uend, double vstart, double vend,
   double point[3],  color[3];  
   double p[3], p2[3], normal[3];
   
-	for(i=ustart; i<uend;i = i + .001){
-		for(j=vstart; j<vend;j = j + .001){
+	for(i=ustart; i<uend;i = i + .01){
+		for(j=vstart; j<vend;j = j + .01){
 
 			func(i,j,point);
 			D3d_mat_mult_pt(point, m, point);
@@ -299,7 +303,7 @@ int main(){
   double numframes = 1000;
 //===========================================================================//
   int i = 0;
-  while (i < numframes) {
+  // while (i < numframes) {
     for (x = 0; x < Half_window_size * 2; ++x)
       { 
         for (y = 0; y < Half_window_size *2; ++y)
@@ -317,8 +321,8 @@ int main(){
     eye[2] =  150*sin(2*M_PI*t) ; 
 
     coi[0] =  0 ;
-    coi[1] =  50 ; 
-    coi[2] =  150 ;
+    coi[1] =  0 ; 
+    coi[2] =  1 ;
 
     up[0]  = eye[0] ; 
     up[1]  = eye[1] + 1 ;
@@ -336,28 +340,31 @@ int main(){
   rgb[1] = 1 ;
   rgb[2] = 1 ;
 
-  makemat(m, minv,50, 10, 10, 0, 0,50, 150);
-  plot(0 , 2*M_PI, -1,1, rgb,  m, V, sphere);
+  // makemat(m, minv,50, 10, 10, 0, 0,50, 150);
+  // plot(0 , 2*M_PI, -1,1, rgb,  m, V, sphere);
 
   D3d_make_identity(m);
   D3d_make_identity(minv);
 
-  makemat(m, minv,10, 50, 20, 0, 0,10, 150);
+  makemat(m, minv,1, 1, 1, 0, 0,0, 1);
+  D3d_rotate_x(m,minv,M_PI/2);
 
   rgb[0] = 1;
   rgb[1] = 0;
   rgb[2] = 0;
 
-  plot(0 , 2*M_PI, -1,1, rgb,  m,V, cone);
+
+    plot(0 , 2*M_PI, -1,1, rgb,  m,V, hyperboloid);
+    G_wait_key();
 //=============================================================================
-    char filename[100];
-    sprintf(filename, "%s%04d.xwd", prefix, i);
-    G_save_image_to_file(filename);
-  fnum++;
+  //   char filename[100];
+  //   sprintf(filename, "%s%04d.xwd", prefix, i);
+  //   G_save_image_to_file(filename);
+  // fnum++;
   printf("image number %d\n", i);
   G_rgb(0,0,0);
   G_clear();
-}
+// }
 
 //---------------------------------------------------------------------------
 

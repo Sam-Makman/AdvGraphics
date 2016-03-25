@@ -47,7 +47,7 @@ void plot(double start, double end, double m[4][4], int (*func)(double rad, doub
 		D3d_mat_mult_pt(point, m, point);
 		G_point(point[0],point[1]);
 
-		if(fmod(sgn(i)*i,(end-start)/1000) < .0001){
+		// if(fmod(sgn(i)*i,(end-start)/1000) < .0001){
 			double center[3];
 			center[0] = 0; center[1] = 0; center[2] = 0;
 
@@ -71,7 +71,7 @@ void plot(double start, double end, double m[4][4], int (*func)(double rad, doub
 			make_unit_vector(slope);
 
 			// G_line(point[0] , point[1] ,point[0] - (slope[0]*10), (point[1] ) - (slope[1]*10));
-		}
+		// }
 	}	
 } 
 
@@ -200,14 +200,17 @@ double tracer(double m[2][4][4],double minv[2][4][4], int n){
 		}
 	}
  double fnorm[3];
-    D3d_mat_mult_pt(pfinal,m[nfinal],pfinal);
    
     double sx = 1/(-sin(resFinal));
     double sy = 1/cos(resFinal);
 
-    normal[0] = pfinal[0] + (sx/10);
-    normal[1] = pfinal[1] + (sy/10);
+    normal[0] = pfinal[0] + (sx);
+    normal[1] = pfinal[1] + (sy);
 
+    D3d_mat_mult_pt(pfinal,m[nfinal],pfinal);
+
+    printf("%lf, %lf \n", normal[0], normal[1]);
+    // D3d_mat_mult_pt(fnorm,minv[nfinal],normal);
     fnorm[0] = minv[nfinal][0][0]*normal[0] + minv[nfinal][1][0]*normal[1];
     fnorm[1] = minv[nfinal][0][1]*normal[0] + minv[nfinal][1][1]*normal[1];
 

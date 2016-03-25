@@ -205,8 +205,8 @@ double tracer(double m[2][4][4],double minv[2][4][4], int n){
     double sx = 1/(-sin(resFinal));
     double sy = 1/cos(resFinal);
 
-     normal[0] = pfinal[0] + (sx/10);
-     normal[1] = pfinal[1] + (sy/10);
+    normal[0] = pfinal[0] + (sx/10);
+    normal[1] = pfinal[1] + (sy/10);
 
     fnorm[0] = minv[nfinal][0][0]*normal[0] + minv[nfinal][1][0]*normal[1];
     fnorm[1] = minv[nfinal][0][1]*normal[0] + minv[nfinal][1][1]*normal[1];

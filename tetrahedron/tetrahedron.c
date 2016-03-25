@@ -358,10 +358,10 @@ int init_scene (int frame_number)
 nodeRgb[0]=0;
 int f;
 for(k=0;k<4;k++){
-    nodeRgb[0] = 0;
+  nodeRgb[0] = 0;
   nodeRgb[1] = 1;
   nodeRgb[2] = 0;
-  for(f=0;f<4;f++){
+  for(f=k;f<4;f++){
     if(f==k){
       continue;
     }
@@ -382,7 +382,7 @@ for(k=0;k<4;k++){
     tup[1] = ycen[k]+1;
     tup[2] = zcen[k];
 
-    D3d_scale(m,minv, .03,.8,.03);
+    D3d_scale(m,minv, .03,.9,.03);
     D3d_rotate_x(m,minv,M_PI/2);
     D3d_translate(m,minv,0,0,1);
     // makemat(m, minv, brad, brad, brad, 0,0,0, 0,0,1 );
@@ -440,10 +440,7 @@ int main(){
 
 
   Tan_half_angle = tan((M_PI*25)/180);
-  G_init_graphics(Half_window_size*2, Half_window_size*2);
-  G_rgb(0,0,0);
-  G_clear();
-
+  int map = create_new_xwd_map(Half_window_size*2, Half_window_size*2);
 
   int i;
   for(i= 0; i < 73; i++){
@@ -451,6 +448,8 @@ int main(){
     char filename[100];
     sprintf(filename, "%s%04d.xwd", prefix, i);
     G_save_image_to_file(filename);
+    G_rgb(0,0,0);
+    G_clear();
   }
 
 

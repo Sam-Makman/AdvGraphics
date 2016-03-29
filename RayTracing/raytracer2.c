@@ -65,12 +65,10 @@ void plot(double start, double end, double m[4][4], int (*func)(double rad, doub
 			p[2] = point[2] - p[2];
 
 			make_unit_vector(p);
-
 			D3d_x_product(slope, p, z);
-
 			make_unit_vector(slope);
 
-			// G_line(point[0] , point[1] ,point[0] - (slope[0]*10), (point[1] ) - (slope[1]*10));
+		// 	G_line(point[0] , point[1] ,point[0] - (slope[0]*10), (point[1] ) - (slope[1]*10));
 		// }
 	}	
 } 
@@ -147,28 +145,33 @@ void copy(double *a , double * b , int n){
 	}
 }
 
-double tracer(double m[2][4][4],double minv[2][4][4], int n){
-   int i;
-    double point[3],  point2[3];
-    getPoint(point);
-    getPoint(point2);
+double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n, int numRef){
+    int i;
     int nfinal;
     double resFinal = 1000000;
     double pfinal[3];
 
     double tpoint[3], tpoint2[3];
-    double normal[3];
 	double p2[3];
 	double p1[3];
-   for(i=0; i< n; i++){
-	    D3d_mat_mult_pt(tpoint, minv[i], point);
-	    D3d_mat_mult_pt(tpoint2, minv[i], point2);
 
+	printf("reflections left = %d \n", numRef);
+	if(numRef <=0){
+		printf("no more relfections \n");
+		return;
+	}
 
+   for(i=0; i < n; i++){
+
+   		//convert points to object space
+	    D3d_mat_mult_pt(tpoint, minv[i], points[0]);
+	    D3d_mat_mult_pt(tpoint2, minv[i], points[1]);
+
+	    //find slope of two points 
 	    double p = tpoint2[0] - tpoint[0];
 	    double q = tpoint2[1] - tpoint[1];
 
-
+	    //find a,b,c for quadtratic equation
 	    double a = pow(p,2) + pow(q,2);
 	    double b = (2*tpoint[0]*p) + (2*tpoint[1] * q);
 	    double c = pow(tpoint[0],2) + pow(tpoint[1],2) - 1;
@@ -178,8 +181,10 @@ double tracer(double m[2][4][4],double minv[2][4][4], int n){
 
 	    G_rgb(1,0,0);
 
-	    if(res[0] < res[1]){
-	    	if(resFinal > res[0]){
+	    printf("res 0 = %lf , res 1 = %lf\n",res[0], res[1] );
+	    //find closest point 
+	    if(res[0] < res[1] || res[0] <= 0){
+	    	if(resFinal > res[0] && res[0] > 0){
 			    pfinal[0] = tpoint[0] + (res[0]*p);
 			    pfinal[1] = tpoint[1] + (res[0] * q);
 			    pfinal[2] = 1;
@@ -189,7 +194,7 @@ double tracer(double m[2][4][4],double minv[2][4][4], int n){
 			}
 
 		}else{
-		    if(resFinal > res[1]){
+		    if(resFinal > res[1] && res[1] > 0){
 			    pfinal[0] = tpoint[0] + (res[1] * p);
 			    pfinal[1] = tpoint[1] + (res[1] * q);
 			    pfinal[2] = 1;
@@ -199,24 +204,62 @@ double tracer(double m[2][4][4],double minv[2][4][4], int n){
 			}
 		}
 	}
- double fnorm[3];
-   
-    double sx = 1/(-sin(resFinal));
-    double sy = 1/cos(resFinal);
+	//return if not intersections
+	if(resFinal > 100000){
+		printf("no intersections\n");
+		return;
+	}
 
-    normal[0] = pfinal[0] + (sx);
-    normal[1] = pfinal[1] + (sy);
+	double fnorm[3];
 
+    fnorm[0] = 2*pfinal[0]*minv[nfinal][0][0] + 2*pfinal[1]*minv[nfinal][1][0];
+    fnorm[1] = 2*minv[nfinal][0][1]*pfinal[0] + 2*minv[nfinal][1][1]*pfinal[1];
+    fnorm[2] = 1;
+
+
+
+    G_rgb(1,1,1);
     D3d_mat_mult_pt(pfinal,m[nfinal],pfinal);
 
-    printf("%lf, %lf \n", normal[0], normal[1]);
-    // D3d_mat_mult_pt(fnorm,minv[nfinal],normal);
-    fnorm[0] = minv[nfinal][0][0]*normal[0] + minv[nfinal][1][0]*normal[1];
-    fnorm[1] = minv[nfinal][0][1]*normal[0] + minv[nfinal][1][1]*normal[1];
 
-    printf("%lf, %lf \n", fnorm[0], fnorm[1]);
-    G_rectangle(fnorm[0],fnorm[1], 4, 4);
-  	G_rectangle(pfinal[0],pfinal[1], 4, 4);
+  	double light[3], reflect[3], unorm[3];
+
+    unorm[0] = fnorm[0];
+    unorm[1] = fnorm[1];
+    unorm[2] = fnorm[2];
+
+    light[0] = pfinal[0];
+    light[1] = pfinal[1];
+    light[2] = pfinal[2];
+
+    make_unit_vector(unorm);
+    make_unit_vector(light);
+
+    fnorm[0] = pfinal[0] + (1000*fnorm[0]);
+    fnorm[1] = pfinal[1] + (1000*fnorm[1]);
+
+    G_line(points[0][0], points[0][1], pfinal[0], pfinal[1]);
+    // G_line(fnorm[0], fnorm[1], pfinal[0], pfinal[1]);
+  	G_rectangle(pfinal[0]-2,pfinal[1]-2, 4, 4);
+
+  	double dot = 2*(unorm[0]*light[0] + unorm[1]*light[1] + unorm[2]*light[2]);
+
+
+  	reflect[0] = dot*unorm[0] - light[0];
+  	reflect[1] = dot*unorm[1] - light[1];
+  	reflect[2] = dot*unorm[2] - light[2];
+
+  	printf("%lf , %lf , %lf \n",reflect[0], reflect[1], reflect[2] );
+	double tpoints[2][3];
+	tpoints[0][0] = pfinal[0] + (.0001*reflect[0]);
+	tpoints[0][1] = pfinal[1] + (.0001*reflect[1]);
+	tpoints[0][2] = pfinal[2] + (.0001*reflect[2]);
+
+	tpoints[1][0] = pfinal[0] + reflect[0];
+	tpoints[1][1] = pfinal[1] + reflect[1];
+	tpoints[1][2] = pfinal[2] + reflect[2];
+
+	tracer(m,minv,tpoints, n, numRef-1);
 }
 
 int main(){
@@ -225,16 +268,25 @@ int main(){
     G_clear();
     G_rgb(0,1,0);
 
-    double m[2][4][4], minv[2][4][4];
+    double m[4][4][4], minv[4][4][4];
 
-    makemat(m[0], minv[0], 50, 100, 0, 300,500);
+    makemat(m[0], minv[0], 80, 100, 0, 300,500);
     plot(0 * M_PI, M_PI * 2, m[0], circle);
 
-    makemat(m[1], minv[1], 40, 50, 0, 100,200);
+    makemat(m[1], minv[1], 30, 50, 0, 100,200);
     plot(0 * M_PI, M_PI * 2, m[1], circle);
+
+    makemat(m[2], minv[2], 80, 100, 0, 400,100);
+    plot(0 * M_PI, M_PI * 2, m[2], circle);
+
+    makemat(m[3], minv[3], 30, 50, 0, 400,400);
+    plot(0 * M_PI, M_PI * 2, m[3], circle);
    	
- 
-    tracer(m,minv,2);
+   	double points[2][3];
+   	getPoint(points[0]);
+   	getPoint(points[1]);
+
+    tracer(m,minv,points, 4,4);
 
     G_wait_key();
 }

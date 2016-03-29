@@ -286,7 +286,7 @@ int main(){
    	getPoint(points[0]);
    	getPoint(points[1]);
 
-    tracer(m,minv,points, 4,4);
+    tracer(m,minv,points, 2,4);
 
     G_wait_key();
 }

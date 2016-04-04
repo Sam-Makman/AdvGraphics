@@ -145,15 +145,22 @@ void copy(double *a , double * b , int n){
 	}
 }
 
+double reflection(double nor[3], double inc[3], double ref[3]){
+  double m;
+  m = 2*(nor[0]*inc[0] + nor[1]*inc[1] + nor[2]*inc[2]);
+  
+  ref[0] = m*nor[0] - inc[0];
+  ref[1] = m*nor[1] - inc[1];
+  ref[2] = m*nor[2] - inc[2];
+}
+
 double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n, int numRef){
     int i;
     int nfinal;
-    double resFinal = 1000000;
+    double resFinal = 100000000;
     double pfinal[3];
 
     double tpoint[3], tpoint2[3];
-	double p2[3];
-	double p1[3];
 
 	printf("reflections left = %d \n", numRef);
 	if(numRef <=0){
@@ -187,7 +194,7 @@ double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n
 	    	if(resFinal > res[0] && res[0] > 0){
 			    pfinal[0] = tpoint[0] + (res[0]*p);
 			    pfinal[1] = tpoint[1] + (res[0] * q);
-			    pfinal[2] = 1;
+			    pfinal[2] = 0;
 
 			    nfinal = i;
 			    resFinal = res[0];
@@ -197,69 +204,77 @@ double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n
 		    if(resFinal > res[1] && res[1] > 0){
 			    pfinal[0] = tpoint[0] + (res[1] * p);
 			    pfinal[1] = tpoint[1] + (res[1] * q);
-			    pfinal[2] = 1;
+			    pfinal[2] = 0;
 
 			    nfinal = i;
 			    resFinal = res[1];
 			}
 		}
 	}
+
 	//return if not intersections
 	if(resFinal > 100000){
 		printf("no intersections\n");
 		return;
 	}
+    double fnorm[3];
 
-	double fnorm[3];
-
+    //normal vector in world space based at orign
     fnorm[0] = 2*pfinal[0]*minv[nfinal][0][0] + 2*pfinal[1]*minv[nfinal][1][0];
     fnorm[1] = 2*minv[nfinal][0][1]*pfinal[0] + 2*minv[nfinal][1][1]*pfinal[1];
-    fnorm[2] = 1;
+    fnorm[2] = 0 ;
 
-
-
-    G_rgb(1,1,1);
+    //draw rectangle where ray intersects circle
     D3d_mat_mult_pt(pfinal,m[nfinal],pfinal);
 
+    //translate normal to intersection point and extend
+    double tx = pfinal[0] + (1000*fnorm[0]);
+    double ty = pfinal[1] + (1000*fnorm[1]);
 
-  	double light[3], reflect[3], unorm[3];
+    printf("tx = %lf , ty= %lf\n",tx,ty );
 
-    unorm[0] = fnorm[0];
-    unorm[1] = fnorm[1];
-    unorm[2] = fnorm[2];
+    //draw normal
+    G_line(tx, ty, pfinal[0], pfinal[1]);
+    //draw interseciton
+    G_rectangle(pfinal[0],pfinal[1], 4, 4);
+    //draw light vector
+    G_line(points[1][0], points[1][1], pfinal[0], pfinal[1]);
+    double inc[3], ref[3], nor[3];
 
-    light[0] = pfinal[0];
-    light[1] = pfinal[1];
-    light[2] = pfinal[2];
+    //caluclate light vector based at origin
+    inc[0] = points[1][0] - pfinal[0];
+    inc[1] = points[1][1] - pfinal[1];
+    inc[2] = 0 ;
+    make_unit_vector(inc);
+    
+    //calculate normal vector based at origin 
+    nor[0] = tx - pfinal[0];
+    nor[1] = ty - pfinal[1];
+    nor[2] = 0 ;
+    make_unit_vector(nor);
 
-    make_unit_vector(unorm);
-    make_unit_vector(light);
+    //reflection 
+    reflection(nor, inc,ref);
 
-    fnorm[0] = pfinal[0] + (1000*fnorm[0]);
-    fnorm[1] = pfinal[1] + (1000*fnorm[1]);
+    //draw reclection vector
+    G_line(100*ref[0]+pfinal[0], 100*ref[1]+pfinal[1], pfinal[0], pfinal[1]);
+    
+    points[0][0] = pfinal[0] + (0.001*ref[0]);
+    points[0][1] = pfinal[1] + (0.001*ref[1]);
+    points[0][2] = 0 ;
+    G_rgb(1,0,0);
+    G_fill_circle(points[0][0], points[0][1],2);
+    
 
-    G_line(points[0][0], points[0][1], pfinal[0], pfinal[1]);
-    // G_line(fnorm[0], fnorm[1], pfinal[0], pfinal[1]);
-  	G_rectangle(pfinal[0]-2,pfinal[1]-2, 4, 4);
+    points[1][0] = (pfinal[0] + 100*ref[0]);
+    points[1][1] = (pfinal[1] + 100*ref[1]);
+    points[1][2] = 0 ;
+    G_rgb(0,0,1);
+    G_fill_circle(points[1][0], points[1][1],2);
 
-  	double dot = 2*(unorm[0]*light[0] + unorm[1]*light[1] + unorm[2]*light[2]);
+	tracer(m,minv,points, n, numRef-1);
 
 
-  	reflect[0] = dot*unorm[0] - light[0];
-  	reflect[1] = dot*unorm[1] - light[1];
-  	reflect[2] = dot*unorm[2] - light[2];
-
-  	printf("%lf , %lf , %lf \n",reflect[0], reflect[1], reflect[2] );
-	double tpoints[2][3];
-	tpoints[0][0] = pfinal[0] + (.0001*reflect[0]);
-	tpoints[0][1] = pfinal[1] + (.0001*reflect[1]);
-	tpoints[0][2] = pfinal[2] + (.0001*reflect[2]);
-
-	tpoints[1][0] = pfinal[0] + reflect[0];
-	tpoints[1][1] = pfinal[1] + reflect[1];
-	tpoints[1][2] = pfinal[2] + reflect[2];
-
-	tracer(m,minv,tpoints, n, numRef-1);
 }
 
 int main(){
@@ -270,23 +285,23 @@ int main(){
 
     double m[4][4][4], minv[4][4][4];
 
-    makemat(m[0], minv[0], 80, 100, 0, 300,500);
+    makemat(m[0], minv[0], 20, 350, 0, 20,350);
     plot(0 * M_PI, M_PI * 2, m[0], circle);
 
-    makemat(m[1], minv[1], 30, 50, 0, 100,200);
+    makemat(m[1], minv[1], 350, 20, 0, 350,20);
     plot(0 * M_PI, M_PI * 2, m[1], circle);
 
-    makemat(m[2], minv[2], 80, 100, 0, 400,100);
+    makemat(m[2], minv[2], 20, 350, 0, 680, 350);
     plot(0 * M_PI, M_PI * 2, m[2], circle);
 
-    makemat(m[3], minv[3], 30, 50, 0, 400,400);
+    makemat(m[3], minv[3], 350, 20, 0, 350,680);
     plot(0 * M_PI, M_PI * 2, m[3], circle);
    	
    	double points[2][3];
    	getPoint(points[0]);
    	getPoint(points[1]);
 
-    tracer(m,minv,points, 2,4);
+    tracer(m,minv,points, 4,4);
 
     G_wait_key();
 }

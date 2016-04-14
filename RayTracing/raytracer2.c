@@ -154,7 +154,7 @@ double reflection(double nor[3], double inc[3], double ref[3]){
   ref[2] = m*nor[2] - inc[2];
 }
 
-double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n, int numRef){
+double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n, int numRef){
     int i;
     int nfinal;
     double resFinal = 100000000;
@@ -233,12 +233,10 @@ double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n
 
     printf("tx = %lf , ty= %lf\n",tx,ty );
 
-    //draw normal
-    G_line(tx, ty, pfinal[0], pfinal[1]);
     //draw interseciton
     G_rectangle(pfinal[0],pfinal[1], 4, 4);
     //draw light vector
-    G_line(points[1][0], points[1][1], pfinal[0], pfinal[1]);
+    G_line(points[0][0], points[0][1], pfinal[0], pfinal[1]);
     double inc[3], ref[3], nor[3];
 
     //caluclate light vector based at origin
@@ -262,19 +260,13 @@ double tracer(double m[4][4][4],double minv[4][4][4], double points[2][3], int n
     points[0][0] = pfinal[0] + (0.001*ref[0]);
     points[0][1] = pfinal[1] + (0.001*ref[1]);
     points[0][2] = 0 ;
-    G_rgb(1,0,0);
-    G_fill_circle(points[0][0], points[0][1],2);
     
 
     points[1][0] = (pfinal[0] + 100*ref[0]);
     points[1][1] = (pfinal[1] + 100*ref[1]);
     points[1][2] = 0 ;
-    G_rgb(0,0,1);
-    G_fill_circle(points[1][0], points[1][1],2);
 
 	tracer(m,minv,points, n, numRef-1);
-
-
 }
 
 int main(){
@@ -283,7 +275,7 @@ int main(){
     G_clear();
     G_rgb(0,1,0);
 
-    double m[4][4][4], minv[4][4][4];
+    double m[5][4][4], minv[5][4][4];
 
     makemat(m[0], minv[0], 20, 350, 0, 20,350);
     plot(0 * M_PI, M_PI * 2, m[0], circle);
@@ -296,12 +288,16 @@ int main(){
 
     makemat(m[3], minv[3], 350, 20, 0, 350,680);
     plot(0 * M_PI, M_PI * 2, m[3], circle);
+
+    makemat(m[4], minv[4], 70, 40, 0, 350,350);
+    plot(0 * M_PI, M_PI * 2, m[4], circle);
+   	
    	
    	double points[2][3];
    	getPoint(points[0]);
    	getPoint(points[1]);
 
-    tracer(m,minv,points, 4,4);
+    tracer(m,minv,points, 5,10);
 
     G_wait_key();
 }

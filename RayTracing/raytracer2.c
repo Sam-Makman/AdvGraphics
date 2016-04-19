@@ -19,16 +19,6 @@ void makemat(double m[4][4], double minv[4][4], double sx, double sy, double rz,
 
 	D3d_make_movement_sequence_matrix(m,minv, num, tlist, plist) ;
 }
-double dist(double p[3] , double p2[3]){
-	double dx = p[0] - p2[0];
-	double dy = p[1] - p2[1];
-	return sqrt((dx*dx) + (dy*dy));
-
-}
-
-double dot_product(double a[3], double b[3]){
-	return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
-}
 
 int make_unit_vector(double v[3]){
 	double length = sqrt((v[0]*v[0])+(v[1]*v[1])+(v[2]*v[2]));
@@ -79,41 +69,6 @@ int circle(double rad, double xy[3]){
 	xy[2] = 0;
 }
 
-int sum4(double rad, double xy[3]){
-	xy[0] = sgn(cos(rad)) * sqrt(fabs(cos(rad)));
-	xy[1] = sgn(sin(rad)) * sqrt(fabs(sin(rad)));
-	xy[2] = 0;
-}
-
-int square(double rad, double xy[3]){
-	xy[0] = sgn(cos(rad)) * pow(cos(rad),2);
-	xy[1] = sgn(sin(rad)) * pow(sin(rad),2);
-	xy[2] = 0;
-}
-
-int astroid(double rad, double xy[3]){
-	xy[0] = sgn(cos(rad)) * pow(cos(rad),4);
-	xy[1] = sgn(sin(rad)) * pow(sin(rad),4);
-	xy[2] = 0;
-}
-
-int hyperbola(double rad, double xy[3]){
-	xy[0] = cosh(rad);
-	xy[1] = sinh(rad);
-	xy[2] = 0;
-}
-
-int parabola(double rad, double xy[3]){
-	xy[0] = rad;
-	xy[1] = rad*rad;
-	xy[2] = 0;
-}
-
-int lemon(double rad, double xy[3]){
-	xy[0] = pow(cos(rad),3);
-	xy[1] = sin(rad);
-	xy[2] = 0;
-}
 void clear(){
 	G_wait_key();
 	G_rgb(0,0,0) ;
@@ -133,16 +88,14 @@ void getPoint(double point[3]){
 		G_rectangle(coords[0] -2, coords[1]-2, 4,4);
 }
 
-void quadratic(double res[2], double a, double b, double c){
-	res[0] = (-b + sqrt((b*b)-(4*a*c)))/(2*a);
-	res[1] = (-b - sqrt((b*b)-(4*a*c)))/(2*a);
-}
-
-void copy(double *a , double * b , int n){
-	int i;
-	for(i=0;i<n;i++){
-		a[i] = b[i];
-	}
+int quadratic(double res[2], double a, double b, double c){
+  if((b*b)-(4*a*c) < 0){
+  	printf("quadratic %lf\n", (b*b)-(4*a*c));
+    return -1;
+  }
+  res[0] = (-b + sqrt((b*b)-(4*a*c)))/(2*a);
+  res[1] = (-b - sqrt((b*b)-(4*a*c)))/(2*a);
+  return 1;
 }
 
 double reflection(double nor[3], double inc[3], double ref[3]){
@@ -151,7 +104,7 @@ double reflection(double nor[3], double inc[3], double ref[3]){
   
   ref[0] = m*nor[0] - inc[0];
   ref[1] = m*nor[1] - inc[1];
-  ref[2] = m*nor[2] - inc[2];
+  ref[2] = 0;//m*nor[2] - inc[2];
 }
 
 double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n, int numRef){
@@ -164,10 +117,13 @@ double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n
 
 	printf("reflections left = %d \n", numRef);
 	if(numRef <=0){
-		printf("no more relfections \n");
+		// printf("no more relfections \n");
 		return;
 	}
 
+	double tsave[100];
+	double osave[100];
+	int numsave = 0;
    for(i=0; i < n; i++){
 
    		//convert points to object space
@@ -184,39 +140,68 @@ double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n
 	    double c = pow(tpoint[0],2) + pow(tpoint[1],2) - 1;
 
 	    double res[2];
-	    quadratic(res, a, b ,c);
+	    int flag = quadratic(res, a, b ,c);
+	    if(flag == -1){ continue;}
+	    // G_rgb(1,0,0);
 
-	    G_rgb(1,0,0);
-
-	    printf("res 0 = %lf , res 1 = %lf\n",res[0], res[1] );
+	    // printf("res 0 = %lf , res 1 = %lf\n",res[0], res[1] );
 	    //find closest point 
-	    if(res[0] < res[1] || res[0] <= 0){
-	    	if(resFinal > res[0] && res[0] > 0){
-			    pfinal[0] = tpoint[0] + (res[0]*p);
-			    pfinal[1] = tpoint[1] + (res[0] * q);
-			    pfinal[2] = 0;
 
-			    nfinal = i;
-			    resFinal = res[0];
-			}
+	    if(res[0] > 0 ){
+	    	tsave[numsave] = res[0]; 
+	    	osave[numsave] = i;
+	    	numsave++;
+	    }
+	      if(res[1] > 0){
+	    	tsave[numsave] = res[1]; 
+	    	osave[numsave] = i;
+	    	numsave++;
+	    }
 
-		}else{
-		    if(resFinal > res[1] && res[1] > 0){
-			    pfinal[0] = tpoint[0] + (res[1] * p);
-			    pfinal[1] = tpoint[1] + (res[1] * q);
-			    pfinal[2] = 0;
 
-			    nfinal = i;
-			    resFinal = res[1];
-			}
-		}
+	 //    if(res[0] < res[1] || res[0] <= 0){
+	 //    	if(resFinal > res[0] && res[0] > 0){
+
+	 //    		tsave
+		// 	    nfinal = i;
+		// 	    resFinal = res[0];
+		// 	}
+
+		// }else{
+		//     if(resFinal > res[1] && res[1] > 0){
+		// 	    pfinal[0] = tpoint[0] + (res[1] * p);
+		// 	    pfinal[1] = tpoint[1] + (res[1] * q);
+		// 	    pfinal[2] = 0;
+
+		// 	    nfinal = i;
+		// 	    resFinal = res[1];
+		// 	}
+		// }
 	}
 
 	//return if not intersections
-	if(resFinal > 100000){
+	if(numsave == 0){
 		printf("no intersections\n");
 		return;
 	}
+	double mint = tsave[0];
+	int mino = osave[0];
+	int k;
+	for(k=1; k< numsave; k++){
+		if(mint > tsave[k]){
+			mint = tsave[k];
+			mino = osave[k];
+		}
+	}
+
+	nfinal = mino;
+	D3d_mat_mult_pt(tpoint, minv[mino], points[0]);
+	D3d_mat_mult_pt(tpoint2, minv[mino], points[1]);
+
+    pfinal[0] = tpoint[0] + (mint *(tpoint2[0] -tpoint[0] ));
+    pfinal[1] = tpoint[1] + (mint *(tpoint2[1] -tpoint[1] ));
+    pfinal[2] = 0;
+
     double fnorm[3];
 
     //normal vector in world space based at orign
@@ -228,8 +213,8 @@ double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n
     D3d_mat_mult_pt(pfinal,m[nfinal],pfinal);
 
     //translate normal to intersection point and extend
-    double tx = pfinal[0] + (1000*fnorm[0]);
-    double ty = pfinal[1] + (1000*fnorm[1]);
+    double tx = pfinal[0] + (fnorm[0]);
+    double ty = pfinal[1] + (fnorm[1]);
 
     printf("tx = %lf , ty= %lf\n",tx,ty );
 
@@ -255,17 +240,18 @@ double tracer(double m[5][4][4],double minv[5][4][4], double points[2][3], int n
     reflection(nor, inc,ref);
 
     //draw reclection vector
-    G_line(100*ref[0]+pfinal[0], 100*ref[1]+pfinal[1], pfinal[0], pfinal[1]);
+    // G_line(100*ref[0]+pfinal[0], 100*ref[1]+pfinal[1], pfinal[0], pfinal[1]);
     
     points[0][0] = pfinal[0] + (0.001*ref[0]);
     points[0][1] = pfinal[1] + (0.001*ref[1]);
     points[0][2] = 0 ;
     
 
-    points[1][0] = (pfinal[0] + 100*ref[0]);
-    points[1][1] = (pfinal[1] + 100*ref[1]);
+    points[1][0] = (pfinal[0] + ref[0]);
+    points[1][1] = (pfinal[1] + ref[1]);
     points[1][2] = 0 ;
-
+    
+    G_wait_key();
 	tracer(m,minv,points, n, numRef-1);
 }
 
@@ -289,7 +275,7 @@ int main(){
     makemat(m[3], minv[3], 350, 20, 0, 350,680);
     plot(0 * M_PI, M_PI * 2, m[3], circle);
 
-    makemat(m[4], minv[4], 70, 40, 0, 350,350);
+    makemat(m[4], minv[4], 70, 100, 0, 600,500);
     plot(0 * M_PI, M_PI * 2, m[4], circle);
    	
    	
@@ -297,7 +283,7 @@ int main(){
    	getPoint(points[0]);
    	getPoint(points[1]);
 
-    tracer(m,minv,points, 5,10);
+    tracer(m,minv,points, 5,1000);
 
     G_wait_key();
-}
+}	

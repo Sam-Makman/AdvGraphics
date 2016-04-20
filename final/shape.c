@@ -4,12 +4,13 @@
 
 
 
-SHAPE new_shape(double x, double y, double z, double radius, double color[3], double ref, int numChildren){
+SHAPE new_shape(double x, double y, double z, double radius, Operation calcChild, double color[3], double ref, int numChildren){
 	SHAPE shape;
 	shape.x = x;
 	shape.y = y;
 	shape.z = z;
 	shape.radius = radius;
+	shape.calcChild = calcChild;
 	shape.color[0] = color[0];
 	shape.color[1] = color[1];
 	shape.color[2] = color[2];
@@ -21,14 +22,20 @@ SHAPE new_shape(double x, double y, double z, double radius, double color[3], do
 SHAPE get_child(SHAPE shape, int childNumber ){
 	SHAPE child;
 	childNumber = childNumber%shape.numChildren;
-	child.x = cos((2*M_PI*childNumber)/shape.numChildren) * (1.5 * shape.radius) + shape.x ;
-	child.y = sin((2*M_PI*childNumber)/shape.numChildren) * (1.5 * shape.radius) + shape.y ;
-	child.z = shape.z;
+	double vals[4];
+
+	//gets x,y,z,radius of child shape 
+	shape.calcChild(vals, shape.x, shape.y, shape.z, shape.radius, childNumber, shape.numChildren);
+
+	child.x = vals[0] ;
+	child.y = vals[1] ;
+	child.z = vals[2];
 	child.color[0] = shape.color[1];
 	child.color[1] = shape.color[2];
 	child.color[2] = shape.color[0];
 	child.ref = shape.ref;
-	child.radius = shape.radius/2;
+	child.radius = vals[3];
+	child.calcChild = shape.calcChild;
 	child.numChildren = shape.numChildren;
 	return child;
 

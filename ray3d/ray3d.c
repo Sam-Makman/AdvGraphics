@@ -1,12 +1,6 @@
 #include <FPT.h>
 #include <D3d_matrix.h>
-#include "shape.h"
 
-
-#define AMBIENT       0.2 
-#define MAX_DIFFUSE   0.5 
-#define SPECPOW       50 
-#define SHOWN         10
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -14,21 +8,28 @@ double Tan_half_angle ;
 
 
 double light_in_eye_space[3] ;
+double AMBIENT      = 0.2 ;
+double MAX_DIFFUSE  = 0.5 ;
+double SPECPOW      = 50 ;
 
 double eye[3];
 double zbuff[700][700];
 
-double colors[SHOWN][3];
-double reflectivity[SHOWN];
+double colors[10][3];
+double reflectivity[10];
 
 /**===================================================================================================*/
 
-void halfed(double vals[4], double x, double y, double z, double rad, int pos, int total){
-  double pi = (2*M_PI*pos)/total;
-  vals[0] = x + cos(pi)*rad*1.5;
-  vals[1] = y + sin(pi)*rad*1.5;
-  vals[2] = z;
-  vals[3] = rad/3;
+int hyperboloid(double u, double v, double xyz[3]){
+  xyz[0] = sqrt(1+(v*v))*cos(u);
+  xyz[1] = v;
+  xyz[2] = sqrt(1+(v*v))*sin(u);
+}
+
+int sgn(double val){
+	if(val > 0) return 1;
+	if(val < 0) return -1;
+	return 0;
 }
 
 
@@ -78,10 +79,12 @@ double reflection(double nor[3], double inc[3], double ref[3]){
   }
 
 /**======================================================================================================*/
-int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], int n, int numRef,
+int tracer(double m[10][4][4],double minv[10][4][4], double points[2][3], int n, int numRef,
           double intersect[3], double normal[3], double color[3]){
     int i;
+    int nfinal = -1;
     double pfinal[3];
+
     double tpoint[3], tpoint2[3];
     double tsave[100];
     int osave[100];
@@ -90,7 +93,9 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
     int numsave = 0;
 
   if(numRef <=0){ return -1; }
+
    for(i=0; i < n; i++){
+
       //convert points to object space
       D3d_mat_mult_pt(tpoint, minv[i], points[0]);
       D3d_mat_mult_pt(tpoint2, minv[i], points[1]);
@@ -109,7 +114,9 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
       int result = quadratic(res, a, b ,c);
 
       if(result < 0){ continue; }
+
       //find closest point 
+      
       if(res[0] > 0 && res[0] == res[0]){
         tsave[numsave] = res[0]; osave[numsave] = i; numsave++;
         }
@@ -124,6 +131,7 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
       color[2] = 0;
     return -1;
   }
+
 
   mint= tsave[0]; mino = osave[0];
   int j;
@@ -144,10 +152,11 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
     pfinal[1] = tpoint[1] + (mint * (tpoint2[1] - tpoint[1]));
     pfinal[2] = tpoint[2] + (mint * (tpoint2[2] - tpoint[2]));
 
+    nfinal = mino;
     //normal vector in world space based at orign
-    fnorm[0] = 2*minv[mino][0][0]*pfinal[0] + 2*minv[mino][1][0]*pfinal[1] + 2*pfinal[2]*minv[mino][2][0];
-    fnorm[1] = 2*minv[mino][0][1]*pfinal[0] + 2*minv[mino][1][1]*pfinal[1] + 2*pfinal[2]*minv[mino][2][1];
-    fnorm[2] = 2*minv[mino][0][2]*pfinal[0] + 2*minv[mino][1][2]*pfinal[1] + 2*pfinal[2]*minv[mino][2][2] ;
+    fnorm[0] = 2*minv[nfinal][0][0]*pfinal[0] + 2*minv[nfinal][1][0]*pfinal[1] + 2*pfinal[2]*minv[nfinal][2][0];
+    fnorm[1] = 2*minv[nfinal][0][1]*pfinal[0] + 2*minv[nfinal][1][1]*pfinal[1] + 2*pfinal[2]*minv[nfinal][2][1];
+    fnorm[2] = 2*minv[nfinal][0][2]*pfinal[0] + 2*minv[nfinal][1][2]*pfinal[1] + 2*pfinal[2]*minv[nfinal][2][2] ;
 
     //draw rectangle where ray intersects circle
    
@@ -183,23 +192,32 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
     points[1][1] = (pfinal[1] + (.01*ref[1]));
     points[1][2] = (pfinal[2] + (.01*ref[2]));
 
+    intersect[0] = pfinal[0];
+    intersect[1] = pfinal[1];
+    intersect[2] = pfinal[2];
+
+    normal[0] = fnorm[0];
+    normal[1] = fnorm[1];
+    normal[2] = fnorm[2];
+
   if(reflectivity[mino] == 0){
-    Light_Model (colors[mino], inc, pfinal, normal, color);
+    Light_Model (colors[nfinal], inc, intersect, normal, color);
     return mino;
   }
 
   int flag = tracer(m,minv,points, n, numRef-1, pfinal, nor, color);
+
   double tcolor[3];
-  Light_Model (colors[mino], inc, pfinal, fnorm, tcolor);
+  Light_Model (colors[nfinal], inc, intersect, normal, tcolor);
   
-  color[0] = (1-reflectivity[mino])*tcolor[0] + reflectivity[mino] * color[0];
+  color[0] = (1-reflectivity[mino])*tcolor[0] +  reflectivity[mino] * color[0];
   color[1] = (1-reflectivity[mino])*tcolor[1] + reflectivity[mino] * color[1];
   color[2] = (1-reflectivity[mino])*tcolor[2] + reflectivity[mino] * color[2];
 
   if(flag == -1){
-    Light_Model (colors[mino], inc, pfinal, fnorm, color);
+    Light_Model (colors[nfinal], inc, intersect, normal, color);
   }
-  return mino;
+  return nfinal;
 }
 
 
@@ -310,6 +328,20 @@ int Light_Model (double irgb[3],
 
 
 
+
+
+
+double dist(double p[3] , double p2[3]){
+	double dx = p[0] - p2[0];
+	double dy = p[1] - p2[1];
+	return sqrt((dx*dx) + (dy*dy));
+
+}
+
+double dot_product(double a[3], double b[3]){
+	return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
+}
+
 int make_unit_vector(double v[3]){
 	double length = sqrt((v[0]*v[0])+(v[1]*v[1])+(v[2]*v[2]));
 			v[0] = v[0]/length;
@@ -317,9 +349,22 @@ int make_unit_vector(double v[3]){
 			v[2] = v[2]/length;
 }
 
+
+int sphere(double u, double v, double xy[3]){
+	xy[0] = sqrt(1-(v*v))*cos(u);
+	xy[1] = v;
+	xy[2] = sqrt(1-(v*v))*sin(u);
+}
+
+int cone(double u, double v, double xy[3]){
+  xy[0] = (1-v)*cos(u);
+  xy[1] = v;
+  xy[2] = (1-v)*sin(u);
+}
+
 //**======================================================================**/
 
-void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
+void draw(double m[10][4][4], double minv[10][4][4],  int n){
   int i,j;
   for(i = -Half_window_size; i< Half_window_size; i++){
     for(j = -Half_window_size; j< Half_window_size; j++){
@@ -339,101 +384,133 @@ void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
       int sphere =  tracer(m, minv, points, n, 2, intersect, normal, color);
 
       if(sphere == -1){
+        G_rgb(0,0,0);
+        G_point(i + Half_window_size, j + Half_window_size);
       }else{
 
 
       double eye[3];
       eye[0] = 0; eye[1] = 0; eye[2] = 0;
 
+
+      // Light_Model (colors[sphere], eye, intersect, normal, color);
+
       G_rgb(color[0], color[1], color[2]);
       G_point(i + Half_window_size,j + Half_window_size);
       }
     }   
   }
+  printf("Done\n");
 }
 
-void fractal(SHAPE seed, int levels){
-  if(levels <=0){return;}
-  int i;
-  double m[SHOWN][4][4], minv[SHOWN][4][4];
-  double tcol[seed.numChildren+1][3];
-  double tref[seed.numChildren+1];
-
-  tcol[0][0] = seed.color[0];
-  tcol[0][1] = seed.color[1];
-  tcol[0][2] = seed.color[2];
-
-  for(i=1; i<seed.numChildren + 1; i++){
-    if(i >= SHOWN){ return; }
-      SHAPE child = get_child(seed,i);
-      make_matrix(child, m[i], minv[i] );
-    
-      make_matrix(seed, m[0], minv[0]);
-
-
-
-      reflectivity[0] = seed.ref;
-      tcol[i][0] = child.color[0];
-      tcol[i][1] = child.color[1];
-      tcol[i][2] = child.color[2];
-
-      reflectivity[i] = child.ref;
-
-      // draw(m, minv, seed.numChildren + 1);
-      fractal(child, levels - 1);
-  }
-
-  for(i = 0; i<seed.numChildren + 1; i++){
-  colors[i][0] = tcol[i][0];
-  colors[i][1] = tcol[i][1];
-  colors[i][2] = tcol[i][2];
-  }
-
-  draw(m, minv, seed.numChildren + 1);
-  // G_wait_key();
-}
 
 
 //**======================================================================**/
+
+void clear(){
+	G_wait_key();
+	G_rgb(0,0,0) ;
+  G_clear();
+  G_rgb(0,1,0);
+    
+}
 
 int main(){
 
   char prefix[100];
   printf("Enter file extension\n");
   scanf("%s", prefix);
-  int i;
+  int x,y,i;
 
+
+	double rgb[3];
+
+  colors[0][0] = 1;
+  colors[0][1] = 0;
+  colors[0][2] = 0;
+
+  colors[1][0] = 0;
+  colors[1][1] = 0;
+  colors[1][2] = 1;
+
+  colors[2][0] = 0;
+  colors[2][1] = 1;
+  colors[2][2] = 0;
+  
+  reflectivity[0] = .5;
+  reflectivity[1] = .5;
+  reflectivity[2] = .5;
+
+  AMBIENT = 0.2 ;
+  MAX_DIFFUSE = 0.5 ;
+  SPECPOW = 30 ;
 
   light_in_eye_space[0] = 100;
   light_in_eye_space[1] = 100;
   light_in_eye_space[2] = 0;
 
+
 	Half_window_size  = 300;
 	Half_angle_degrees = 30;
 	Tan_half_angle = tan(Half_angle_degrees*M_PI/180) ;
 
+
   G_init_graphics(Half_window_size*2,Half_window_size*2);
 	G_rgb(0,0,0) ;
   G_clear();
+  G_rgb(0,1,0);
+
+  
+  double t;
+  double coi[3], up[3];
+  double fnum = 0;
+  double numframes = 20;
 
    for(i=0;i<20;i++){
+//===========================================================================//
 
-    double m[SHOWN][4][4], minv[SHOWN][4][4];
+    double V[4][4], Vi[4][4];
 
-    double color[3];
-    color[0] = 0;
-    color[1] = 0;
-    color[2] = 1;
-    SHAPE seed = new_shape(0,0,100 + (i*5),30,halfed , color, .5,8);
+    t = 2.0 * M_PI *fnum/numframes ; // goes from 0 to 1
+    printf("%lf\n",t );
 
-    fractal(seed,2);
-    printf("end fractal\n"); 
-    G_wait_key();
-  //=============================================================================
+    eye[0] = 0 ; 
+    eye[1] = 0 ; 
+    eye[2] = 0 ; 
 
-    // char filename[100];
-    // sprintf(filename, "%s%04d.xwd", prefix, i);
-    // G_save_image_to_file(filename);
+    coi[0] =  0 ;
+    coi[1] =  0 ; 
+    coi[2] =  1 ;
+
+    up[0]  = eye[0] ; 
+    up[1]  = eye[1] + 1 ;
+    up[2]  = eye[2] ; 
+
+    D3d_make_identity (V) ;
+    D3d_make_identity (Vi) ;
+
+    D3d_view (V, Vi,  eye,coi,up) ;
+//--------------------------------------------------------------------//
+
+  double m[10][4][4], minv[10][4][4];
+
+
+  D3d_make_identity(m[0]);
+  D3d_make_identity(minv[0]);
+
+  makemat(m[0], minv[0],30, 30, 30, 0, 0,0, 150 + (10*i));
+  makemat(m[1], minv[1],30, 30, 30, 0, 50,0, 150);
+  makemat(m[2], minv[2],30, 30, 30, 0, -50,0, 150);
+
+  
+  draw(m, minv, 3);
+  G_wait_key();
+//=============================================================================
+
+  //   char filename[100];
+  //   sprintf(filename, "%s%04d.xwd", prefix, i);
+  //   G_save_image_to_file(filename);
+  // fnum++;
 
   G_rgb(0,0,0);
   G_clear();

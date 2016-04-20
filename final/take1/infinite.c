@@ -23,15 +23,6 @@ double reflectivity[SHOWN];
 
 /**===================================================================================================*/
 
-void halfed(double vals[4], double x, double y, double z, double rad, int pos, int total){
-  double pi = (2*M_PI*pos)/total;
-  vals[0] = x + cos(pi)*rad*1.5;
-  vals[1] = y + sin(pi)*rad*1.5;
-  vals[2] = z;
-  vals[3] = rad/3;
-}
-
-
 void makemat(double m[4][4], double minv[4][4], double sx, double sy, double sz, 
 				double rz, double tx, double ty, double tz){
 	int num = 0 ; 
@@ -339,58 +330,56 @@ void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
       int sphere =  tracer(m, minv, points, n, 2, intersect, normal, color);
 
       if(sphere == -1){
+        G_rgb(0,0,0);
+        // G_point(i + Half_window_size, j + Half_window_size);
       }else{
 
 
       double eye[3];
       eye[0] = 0; eye[1] = 0; eye[2] = 0;
 
+
+      // Light_Model (colors[sphere], eye, intersect, normal, color);
+
       G_rgb(color[0], color[1], color[2]);
       G_point(i + Half_window_size,j + Half_window_size);
       }
     }   
   }
+  printf("Done\n");
 }
 
 void fractal(SHAPE seed, int levels){
+  printf("leve = %d \n", levels);
   if(levels <=0){return;}
   int i;
   double m[SHOWN][4][4], minv[SHOWN][4][4];
-  double tcol[seed.numChildren+1][3];
-  double tref[seed.numChildren+1];
 
-  tcol[0][0] = seed.color[0];
-  tcol[0][1] = seed.color[1];
-  tcol[0][2] = seed.color[2];
+  make_matrix(seed, m[0], minv[0]);
+
+  colors[0][0] = seed.color[0];
+  colors[0][1] = seed.color[1];
+  colors[0][2] = seed.color[2];
+
+  reflectivity[0] = seed.ref;
+
+
 
   for(i=1; i<seed.numChildren + 1; i++){
     if(i >= SHOWN){ return; }
-      SHAPE child = get_child(seed,i);
-      make_matrix(child, m[i], minv[i] );
-    
-      make_matrix(seed, m[0], minv[0]);
+    SHAPE child = get_child(seed,i);
+    make_matrix(child, m[i], minv[i] );
+  
+    colors[i][0] = child.color[0];
+    colors[i][1] = child.color[1];
+    colors[i][2] = child.color[2];
 
+    reflectivity[i] = child.ref;
 
-
-      reflectivity[0] = seed.ref;
-      tcol[i][0] = child.color[0];
-      tcol[i][1] = child.color[1];
-      tcol[i][2] = child.color[2];
-
-      reflectivity[i] = child.ref;
-
-      // draw(m, minv, seed.numChildren + 1);
-      fractal(child, levels - 1);
-  }
-
-  for(i = 0; i<seed.numChildren + 1; i++){
-  colors[i][0] = tcol[i][0];
-  colors[i][1] = tcol[i][1];
-  colors[i][2] = tcol[i][2];
+    fractal(child, levels - 1);
   }
 
   draw(m, minv, seed.numChildren + 1);
-  // G_wait_key();
 }
 
 
@@ -422,18 +411,18 @@ int main(){
 
     double color[3];
     color[0] = 0;
-    color[1] = 0;
+    color[1] = 1;
     color[2] = 1;
-    SHAPE seed = new_shape(0,0,100 + (i*5),30,halfed , color, .5,8);
+    SHAPE seed = new_shape(0,0,100 + (i*5),30,color, .5,5);
 
-    fractal(seed,2);
+    fractal(seed,3);
     printf("end fractal\n"); 
     G_wait_key();
   //=============================================================================
 
-    // char filename[100];
-    // sprintf(filename, "%s%04d.xwd", prefix, i);
-    // G_save_image_to_file(filename);
+    char filename[100];
+    sprintf(filename, "%s%04d.xwd", prefix, i);
+    G_save_image_to_file(filename);
 
   G_rgb(0,0,0);
   G_clear();

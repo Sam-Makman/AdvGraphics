@@ -6,9 +6,10 @@
 #define AMBIENT       0.2 
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
-#define SHOWN         10
+#define SHOWN         1000
 #define DEPTH         3
-#define CHILDREN      9
+#define CHILDREN      5
+#define REFLECTIONS   3
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -19,6 +20,10 @@ double light_in_eye_space[3] ;
 
 double eye[3];
 double zbuff[700][700];
+
+double ms[SHOWN][4][4];
+double minvs[SHOWN][4][4];
+int shapeNum = 0;
 
 double colors[SHOWN][3];
 double reflectivity[SHOWN];
@@ -90,7 +95,7 @@ double reflection(double nor[3], double inc[3], double ref[3]){
   }
 
 /**======================================================================================================*/
-int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], int n, int numRef,
+int tracer(double points[2][3], int numRef,
           double intersect[3], double normal[3], double color[3]){
     int i;
     double pfinal[3];
@@ -102,10 +107,10 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
     int numsave = 0;
 
   if(numRef <=0){ return -1; }
-   for(i=0; i < n; i++){
+   for(i=0; i < shapeNum; i++){
       //convert points to object space
-      D3d_mat_mult_pt(tpoint, minv[i], points[0]);
-      D3d_mat_mult_pt(tpoint2, minv[i], points[1]);
+      D3d_mat_mult_pt(tpoint, minvs[i], points[0]);
+      D3d_mat_mult_pt(tpoint2, minvs[i], points[1]);
 
       //find slope of two points 
       double p = tpoint2[0] - tpoint[0];
@@ -149,21 +154,21 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
 
     double fnorm[3];
 
-    D3d_mat_mult_pt(tpoint, minv[mino], points[0]);
-    D3d_mat_mult_pt(tpoint2, minv[mino], points[1]);
+    D3d_mat_mult_pt(tpoint, minvs[mino], points[0]);
+    D3d_mat_mult_pt(tpoint2, minvs[mino], points[1]);
 
     pfinal[0] = tpoint[0] + (mint * (tpoint2[0] - tpoint[0]));
     pfinal[1] = tpoint[1] + (mint * (tpoint2[1] - tpoint[1]));
     pfinal[2] = tpoint[2] + (mint * (tpoint2[2] - tpoint[2]));
 
     //normal vector in world space based at orign
-    fnorm[0] = 2*minv[mino][0][0]*pfinal[0] + 2*minv[mino][1][0]*pfinal[1] + 2*pfinal[2]*minv[mino][2][0];
-    fnorm[1] = 2*minv[mino][0][1]*pfinal[0] + 2*minv[mino][1][1]*pfinal[1] + 2*pfinal[2]*minv[mino][2][1];
-    fnorm[2] = 2*minv[mino][0][2]*pfinal[0] + 2*minv[mino][1][2]*pfinal[1] + 2*pfinal[2]*minv[mino][2][2] ;
+    fnorm[0] = 2*minvs[mino][0][0]*pfinal[0] + 2*minvs[mino][1][0]*pfinal[1] + 2*pfinal[2]*minvs[mino][2][0];
+    fnorm[1] = 2*minvs[mino][0][1]*pfinal[0] + 2*minvs[mino][1][1]*pfinal[1] + 2*pfinal[2]*minvs[mino][2][1];
+    fnorm[2] = 2*minvs[mino][0][2]*pfinal[0] + 2*minvs[mino][1][2]*pfinal[1] + 2*pfinal[2]*minvs[mino][2][2] ;
 
     //draw rectangle where ray intersects circle
    
-     D3d_mat_mult_pt(pfinal,m[mino],pfinal);
+     D3d_mat_mult_pt(pfinal,ms[mino],pfinal);
 
     //translate normal to intersection point and extend
     double tx = pfinal[0] + (0.001*fnorm[0]);
@@ -200,7 +205,7 @@ int tracer(double m[SHOWN][4][4],double minv[SHOWN][4][4], double points[2][3], 
     return mino;
   }
 
-  int flag = tracer(m,minv,points, n, numRef-1, pfinal, nor, color);
+  int flag = tracer(points, numRef-1, pfinal, nor, color);
   double tcolor[3];
   Light_Model (colors[mino], inc, pfinal, fnorm, tcolor);
   
@@ -331,7 +336,7 @@ int make_unit_vector(double v[3]){
 
 //**======================================================================**/
 
-void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
+void draw(){
   int i,j;
   for(i = -Half_window_size; i< Half_window_size; i++){
     for(j = -Half_window_size; j< Half_window_size; j++){
@@ -348,7 +353,7 @@ void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
       double intersect[3], normal[3];
 
       double color[3];
-      int sphere =  tracer(m, minv, points, n, 4, intersect, normal, color);
+      int sphere =  tracer(points, REFLECTIONS,  intersect, normal, color);
 
       if(sphere == -1){
       }else{
@@ -367,41 +372,40 @@ void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
 void fractal(SHAPE seed, int levels){
   if(levels <=0){return;}
   int i;
-  double m[SHOWN][4][4], minv[SHOWN][4][4];
   double tcol[seed.numChildren+1][3];
   double tref[seed.numChildren+1];
 
-  tcol[0][0] = seed.color[0];
-  tcol[0][1] = seed.color[1];
-  tcol[0][2] = seed.color[2];
+  colors[shapeNum][0] = seed.color[0];
+  colors[shapeNum][1] = seed.color[1];
+  colors[shapeNum][2] = seed.color[2];
 
-  for(i=1; i<seed.numChildren + 1; i++){
+  reflectivity[shapeNum] = seed.ref;
+
+  make_matrix(seed, ms[shapeNum], minvs[shapeNum]);
+  shapeNum++;
+
+  for(i=0; i<seed.numChildren; i++){
     if(i >= SHOWN){ return; }
+
       SHAPE child = get_child(seed,i);
-      make_matrix(child, m[i], minv[i] );
+      make_matrix(child, ms[shapeNum], minvs[shapeNum] );
     
-      make_matrix(seed, m[0], minv[0]);
 
 
 
       reflectivity[0] = seed.ref;
-      tcol[i][0] = child.color[0];
-      tcol[i][1] = child.color[1];
-      tcol[i][2] = child.color[2];
+      colors[shapeNum][0] = child.color[0];
+      colors[shapeNum][1] = child.color[1];
+      colors[shapeNum][2] = child.color[2];
 
-      reflectivity[i] = child.ref;
-
+      reflectivity[shapeNum] = child.ref;
+      shapeNum++;
       // draw(m, minv, seed.numChildren + 1);
       fractal(child, levels - 1);
   }
 
-  for(i = 0; i<seed.numChildren + 1; i++){
-  colors[i][0] = tcol[i][0];
-  colors[i][1] = tcol[i][1];
-  colors[i][2] = tcol[i][2];
-  }
 
-  draw(m, minv, seed.numChildren + 1);
+  // draw(m, minv, seed.numChildren + 1);
   // G_wait_key();
 }
 
@@ -430,15 +434,16 @@ int main(){
 
    for(i=0;i<20;i++){
 
-    double m[SHOWN][4][4], minv[SHOWN][4][4];
+    // double m[SHOWN][4][4], minv[SHOWN][4][4];
 
     double color[3];
     color[0] = 0;
     color[1] = 0;
     color[2] = 1;
-    SHAPE seed = new_shape(0,0,200 + (i*5),30,equa , color, .5,CHILDREN);
+    SHAPE seed = new_shape(0,0,200 + (i*5),30,halfed , color, .5,CHILDREN);
 
     fractal(seed,DEPTH);
+    draw();
     printf("end fractal\n"); 
     G_wait_key();
   //=============================================================================

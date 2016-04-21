@@ -7,6 +7,8 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         10
+#define DEPTH         3
+#define CHILDREN      9
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -27,8 +29,18 @@ void halfed(double vals[4], double x, double y, double z, double rad, int pos, i
   double pi = (2*M_PI*pos)/total;
   vals[0] = x + cos(pi)*rad*1.5;
   vals[1] = y + sin(pi)*rad*1.5;
-  vals[2] = z;
+  vals[2] = z ;
   vals[3] = rad/3;
+}
+
+void equa(double vals[4], double x, double y, double z, double rad, int pos, int total){
+ 
+  double pi = (2*M_PI*pos)/total;
+  vals[0] = x + cos(pi)*rad*1.5;
+  vals[1] = y + sin(pi)*rad*1.5;
+  vals[2] = z + (((double)pos/total)*6 -3)*rad;
+  vals[3] = rad/3;
+
 }
 
 
@@ -336,7 +348,7 @@ void draw(double m[SHOWN][4][4], double minv[SHOWN][4][4],int n){
       double intersect[3], normal[3];
 
       double color[3];
-      int sphere =  tracer(m, minv, points, n, 2, intersect, normal, color);
+      int sphere =  tracer(m, minv, points, n, 4, intersect, normal, color);
 
       if(sphere == -1){
       }else{
@@ -424,9 +436,9 @@ int main(){
     color[0] = 0;
     color[1] = 0;
     color[2] = 1;
-    SHAPE seed = new_shape(0,0,100 + (i*5),30,halfed , color, .5,8);
+    SHAPE seed = new_shape(0,0,200 + (i*5),30,equa , color, .5,CHILDREN);
 
-    fractal(seed,2);
+    fractal(seed,DEPTH);
     printf("end fractal\n"); 
     G_wait_key();
   //=============================================================================

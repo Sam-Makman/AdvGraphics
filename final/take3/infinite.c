@@ -1,6 +1,5 @@
 #include <FPT.h>
 #include <D3d_matrix.h>
-#include <xwd_tools.h>
 #include "shape.h"
 
 
@@ -338,10 +337,8 @@ int make_unit_vector(double v[3]){
 
 //**======================================================================**/
 
-void draw(char filename[100]){
+void draw(){
   int i,j;
-
-  int map = create_new_xwd_map (Half_window_size*2,Half_window_size*2);
   for(i = -Half_window_size; i< Half_window_size; i++){
     for(j = -Half_window_size; j< Half_window_size; j++){
       double points[2][3];
@@ -363,25 +360,17 @@ void draw(char filename[100]){
       int sphere =  tracer(points, REFLECTIONS,  intersect, normal, color);
 
       if(sphere == -1){
-
-      set_xwd_map_color(map,i + Half_window_size,j + Half_window_size, 0, 0, 0);
       }else{
 
 
       double eye[3];
       eye[0] = 0; eye[1] = 0; eye[2] = 0;
 
-
-      set_xwd_map_color(map,i + Half_window_size,j + Half_window_size,color[0], color[1], color[2]);
-
-
-      // G_rgb(color[0], color[1], color[2]);
-      // G_point(i + Half_window_size,j + Half_window_size);
+      G_rgb(color[0], color[1], color[2]);
+      G_point(i + Half_window_size,j + Half_window_size);
       }
     }   
   }
-
-  xwd_map_to_named_xwd_file(map, filename) ;
 }
 
 void fractal(SHAPE seed, int levels){
@@ -443,9 +432,9 @@ int main(){
 	Half_angle_degrees = 30;
 	Tan_half_angle = tan(Half_angle_degrees*M_PI/180) ;
 
- //  G_init_graphics(Half_window_size*2,Half_window_size*2);
-	// G_rgb(0,0,0) ;
- //  G_clear();
+  G_init_graphics(Half_window_size*2,Half_window_size*2);
+	G_rgb(0,0,0) ;
+  G_clear();
 
   double eye[3],  coi[3] ,  up[3], t;
 
@@ -491,24 +480,22 @@ int main(){
     //   D3d_mat_mult(ms[j], V, ms[j]);
     //   D3d_mat_mult(minvs[j], V, minvs[j]);
     // }
-    
-    // printf("end fractal\n"); 
+    draw();
+    printf("end fractal\n"); 
 
     // G_wait_key();
 
-    // G_rgb(0,0,0);
-    // G_clear();
+    G_rgb(0,0,0);
+    G_clear();
     // G_wait_key();
   //=============================================================================
 
     char filename[100];
     sprintf(filename, "%s%04d.xwd", prefix, i);
-    draw(filename);
-    printf("Image %d \n", i);
-  //   G_save_image_to_file(filename);
+    G_save_image_to_file(filename);
 
-  // G_rgb(0,0,0);
-  // G_clear();
+  G_rgb(0,0,0);
+  G_clear();
 
 //---------------------------------------------------------------------------
 }

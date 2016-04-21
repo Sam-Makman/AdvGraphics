@@ -303,7 +303,7 @@ int main(){
   double numframes = 1000;
 //===========================================================================//
   int i = 0;
-  // while (i < numframes) {
+  while (i < numframes) {
     for (x = 0; x < Half_window_size * 2; ++x)
       { 
         for (y = 0; y < Half_window_size *2; ++y)
@@ -364,7 +364,7 @@ int main(){
   printf("image number %d\n", i);
   G_rgb(0,0,0);
   G_clear();
-// }
+}
 
 //---------------------------------------------------------------------------
 

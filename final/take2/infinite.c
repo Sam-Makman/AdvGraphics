@@ -1,16 +1,15 @@
 #include <FPT.h>
 #include <D3d_matrix.h>
-#include <xwd_tools.h>
 #include "shape.h"
 
 
 #define AMBIENT       0.2 
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
-#define SHOWN         100000
+#define SHOWN         1000
 #define DEPTH         3
 #define CHILDREN      5
-#define REFLECTIONS   1
+#define REFLECTIONS   3
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -20,8 +19,7 @@ double Tan_half_angle ;
 double light_in_eye_space[3] ;
 
 double eye[3];
-double V[4][4], Vi[4][4];
-
+double zbuff[700][700];
 
 double ms[SHOWN][4][4];
 double minvs[SHOWN][4][4];
@@ -338,10 +336,8 @@ int make_unit_vector(double v[3]){
 
 //**======================================================================**/
 
-void draw(char filename[100]){
+void draw(){
   int i,j;
-
-  int map = create_new_xwd_map (Half_window_size*2,Half_window_size*2);
   for(i = -Half_window_size; i< Half_window_size; i++){
     for(j = -Half_window_size; j< Half_window_size; j++){
       double points[2][3];
@@ -354,34 +350,23 @@ void draw(char filename[100]){
       points[1][1] = j;
       points[1][2] = 300/Tan_half_angle;
 
-      D3d_mat_mult_pt(points[0],V,points[0]);
-      D3d_mat_mult_pt(points[1],V,points[1]);
-
       double intersect[3], normal[3];
 
       double color[3];
       int sphere =  tracer(points, REFLECTIONS,  intersect, normal, color);
 
       if(sphere == -1){
-
-      set_xwd_map_color(map,i + Half_window_size,j + Half_window_size, 0, 0, 0);
       }else{
 
 
       double eye[3];
       eye[0] = 0; eye[1] = 0; eye[2] = 0;
 
-
-      set_xwd_map_color(map,i + Half_window_size,j + Half_window_size,color[0], color[1], color[2]);
-
-
-      // G_rgb(color[0], color[1], color[2]);
-      // G_point(i + Half_window_size,j + Half_window_size);
+      G_rgb(color[0], color[1], color[2]);
+      G_point(i + Half_window_size,j + Half_window_size);
       }
     }   
   }
-
-  xwd_map_to_named_xwd_file(map, filename) ;
 }
 
 void fractal(SHAPE seed, int levels){
@@ -443,72 +428,32 @@ int main(){
 	Half_angle_degrees = 30;
 	Tan_half_angle = tan(Half_angle_degrees*M_PI/180) ;
 
- //  G_init_graphics(Half_window_size*2,Half_window_size*2);
-	// G_rgb(0,0,0) ;
- //  G_clear();
+  G_init_graphics(Half_window_size*2,Half_window_size*2);
+	G_rgb(0,0,0) ;
+  G_clear();
 
-  double eye[3],  coi[3] ,  up[3], t;
+   for(i=0;i<20;i++){
 
-  int numframes = 200;
-   for(i=0;i<numframes;i++){
-
-    // double V[4][4], Vi[4][4];
-
-    t = 2.0 * M_PI *i/numframes ; // goes from 0 to 1
-    // printf("%lf\n",t );
-
-    eye[0] = cos(M_PI*2*t) * 200 ; 
-    eye[1] = 150*t; 
-    eye[2] = sin(M_PI*2*t) * 200  ; 
-
-    coi[0] =  0 ;
-    coi[1] =  0 ; 
-    coi[2] =  300 ;
-
-    up[0]  = eye[0] ; 
-    up[1]  = eye[1] + 1 ;
-    up[2]  = eye[2] ; 
-
-    D3d_make_identity (V) ;
-    D3d_make_identity (Vi) ;
-
-    D3d_view (V, Vi,  eye,coi,up) ;
-
-    eye[0] = 0;
-    eye[1] = 0;
-    eye[2] = 0;
+    // double m[SHOWN][4][4], minv[SHOWN][4][4];
 
     double color[3];
     color[0] = 0;
     color[1] = 0;
     color[2] = 1;
-    SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .5,CHILDREN);
+    SHAPE seed = new_shape(0,0,200 + (i*5),30,halfed , color, .5,CHILDREN);
 
     fractal(seed,DEPTH);
-
-    int j;
-    // for(j=0;j<shapeNum; j++){
-    //   D3d_mat_mult(ms[j], V, ms[j]);
-    //   D3d_mat_mult(minvs[j], V, minvs[j]);
-    // }
-    
-    // printf("end fractal\n"); 
-
-    // G_wait_key();
-
-    // G_rgb(0,0,0);
-    // G_clear();
-    // G_wait_key();
+    draw();
+    printf("end fractal\n"); 
+    G_wait_key();
   //=============================================================================
 
-    char filename[100];
-    sprintf(filename, "%s%04d.xwd", prefix, i);
-    draw(filename);
-    printf("Image %d \n", i);
-  //   G_save_image_to_file(filename);
+    // char filename[100];
+    // sprintf(filename, "%s%04d.xwd", prefix, i);
+    // G_save_image_to_file(filename);
 
-  // G_rgb(0,0,0);
-  // G_clear();
+  G_rgb(0,0,0);
+  G_clear();
 
 //---------------------------------------------------------------------------
 }

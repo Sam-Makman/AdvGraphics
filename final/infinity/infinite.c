@@ -8,9 +8,9 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         100000
-#define DEPTH         2
-#define CHILDREN      5
-#define REFLECTIONS   4
+#define DEPTH         1
+#define CHILDREN      4
+#define REFLECTIONS   5
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -20,6 +20,8 @@ double Tan_half_angle ;
 double light_in_eye_space[3] ;
 
 double eye[3];
+double V[4][4], Vi[4][4];
+
 
 double ms[SHOWN][4][4];
 double minvs[SHOWN][4][4];
@@ -30,17 +32,17 @@ double reflectivity[SHOWN];
 
 /**===================================================================================================*/
 
-void halfed(double vals[4], double x, double y, double z, double rad, int pos, int total){
-  double pi = (2*M_PI*pos)/total;
-  vals[0] = x + cos(pi)*rad*1.5;
-  vals[1] = y + sin(pi)*rad*1.5;
-  vals[2] = z ;
-  vals[3] = rad/3;
-}
+  void halfed(double vals[4], double x, double y, double z, double rad, int pos, int total){
+    double pi = (2*M_PI*pos)/total;
+    vals[0] = x + cos(pi)*rad*1.5;
+    vals[1] = y + sin(pi)*rad*1.5;
+    vals[2] = z ;
+    vals[3] = rad/3;
+  }
 
-void equa(double vals[4], double x, double y, double z, double rad, int pos, int total){
- 
-  double pi = (2*M_PI*pos)/total;
+  void equa(double vals[4], double x, double y, double z, double rad, int pos, int total){
+   
+     double pi = (2*M_PI*pos)/total;
   vals[0] = x + cos(pi)*rad*1.5;
   vals[1] = y + sin(pi)*rad*1.5;
   vals[2] = z + (((double)pos/total)*6 -3)*rad;
@@ -344,13 +346,16 @@ void draw(char filename[100]){
     for(j = -Half_window_size; j< Half_window_size; j++){
       double points[2][3];
       
-      points[0][0] = 0;
-      points[0][1] = 0;
-      points[0][2] = 0;
+      points[0][0] = eye[0];
+      points[0][1] = eye[1];
+      points[0][2] = eye[2];
 
-      points[1][0] = i;
-      points[1][1] = j;
-      points[1][2] = 300/Tan_half_angle;
+      points[1][0] = i + eye[0];
+      points[1][1] = j + eye[1];
+      points[1][2] = 300/Tan_half_angle + eye[2];
+
+      D3d_mat_mult_pt(points[0],V,points[0]);
+      D3d_mat_mult_pt(points[1],V,points[1]);
 
       double intersect[3], normal[3];
 
@@ -362,16 +367,8 @@ void draw(char filename[100]){
       set_xwd_map_color(map,i + Half_window_size,j + Half_window_size, 0, 0, 0);
       }else{
 
-
-      double eye[3];
-      eye[0] = 0; eye[1] = 0; eye[2] = 0;
-
-
       set_xwd_map_color(map,i + Half_window_size,j + Half_window_size,color[0], color[1], color[2]);
 
-
-      // G_rgb(color[0], color[1], color[2]);
-      // G_point(i + Half_window_size,j + Half_window_size);
       }
     }   
   }
@@ -401,8 +398,6 @@ void fractal(SHAPE seed, int levels){
       make_matrix(child, ms[shapeNum], minvs[shapeNum] );
     
 
-
-
       reflectivity[0] = seed.ref;
       colors[shapeNum][0] = child.color[0];
       colors[shapeNum][1] = child.color[1];
@@ -410,13 +405,9 @@ void fractal(SHAPE seed, int levels){
 
       reflectivity[shapeNum] = child.ref;
       shapeNum++;
-      // draw(m, minv, seed.numChildren + 1);
       fractal(child, levels - 1);
+      // free(child);
   }
-
-
-  // draw(m, minv, seed.numChildren + 1);
-  // G_wait_key();
 }
 
 
@@ -425,46 +416,50 @@ void fractal(SHAPE seed, int levels){
 int main(){
 
   char prefix[100];
-
-prefix[0] = 't';
-prefix[1] = 'e';
-prefix[2] = 's';
-prefix[3] = 't';
-
+  // printf("Enter file extension\n");
+  // scanf("%s", prefix);
+  prefix[0] = 't';
+  prefix[1] = 'e';
+  prefix[2] = 's';
+  prefix[3] = 't';
   int i;
 
-
-  light_in_eye_space[0] = 100;
-  light_in_eye_space[1] = 100;
-  light_in_eye_space[2] = 0;
+    eye[0] = 0;
+    eye[1] = 0;
+    eye[2] = 0;
 
 	Half_window_size  = 300;
 	Half_angle_degrees = 30;
 	Tan_half_angle = tan(Half_angle_degrees*M_PI/180) ;
 
-  eye[0] = 0;
-  eye[1] = 0;
-  eye[2] = 0;
+    double color[3];
+    color[0] = 0;
+    color[1] = 0;
+    color[2] = 1;
+    SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .25,CHILDREN);
 
-  double color[3];
-  color[0] = 0;
-  color[1] = 0;
-  color[2] = 1;
+    fractal(seed,DEPTH);
 
-  SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .5,CHILDREN);
+  double coi[3] ,  up[3], t;
 
-  fractal(seed,DEPTH);
+  int numframes = 75;
 
-  int numframes = 200;
-   for(i=0;i<numframes;i++){
+ for(i=0;i<numframes;i++){
 
-    int j;
-    for(j=0;j<shapeNum; j++){
-      D3d_translate(ms[j], minvs[j],0,0,-300);
-      D3d_rotate_y(ms[j], minvs[j],.2);
-      D3d_translate(ms[j], minvs[j],0,0,300);
-    }
- 
+  t = 2.0 * M_PI *i/numframes ; // goes from 0 to 1
+
+
+  light_in_eye_space[0] = cos(M_PI*2*t) * 500;
+  light_in_eye_space[1] = 100;
+  light_in_eye_space[2] = sin(M_PI*2*t) * 500;
+
+  int k;
+  for(k = 0; k < shapeNum; k++){
+    D3d_translate(ms[k], minvs[k], 0,0,-300);
+    D3d_rotate_y(ms[k], minvs[k], .2);
+    D3d_translate(ms[k], minvs[k], 0,0,300);
+  }
+
   //=============================================================================
 
     char filename[100];

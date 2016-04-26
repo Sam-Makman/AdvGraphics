@@ -24,7 +24,7 @@ double eye[3];
 double ms[SHOWN][4][4];
 double minvs[SHOWN][4][4];
 int shapeNum = 0;
-
+double offset = 0;
 double colors[SHOWN][3];
 double reflectivity[SHOWN];
 
@@ -46,6 +46,16 @@ void equa(double vals[4], double x, double y, double z, double rad, int pos, int
   vals[2] = z + (((double)pos/total)*6 -3)*rad;
   vals[3] = rad/3;
 
+}
+
+void spin(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double  temp = offset/10.0;
+  // printf("%lf \n",temp );
+  double pi = (2*M_PI*pos)/total;
+  vals[0] = x + cos(pi)*rad*1.5;
+  vals[1] = y + sin(pi)*rad*1.5;
+  vals[2] = z + (((double)pos/total)*(2*temp) -temp)*rad;
+  vals[3] = rad/3;
 }
 
 
@@ -451,17 +461,21 @@ prefix[3] = 't';
   color[1] = 0;
   color[2] = 1;
 
-  SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .5,CHILDREN);
 
-  fractal(seed,DEPTH);
 
   int numframes = 200;
    for(i=0;i<numframes;i++){
+    offset = (double)i;
+
+    shapeNum = 0;
+    SHAPE seed = new_shape(0,0,300 ,30,spin , color, .5,CHILDREN);
+
+   fractal(seed,DEPTH);
 
     int j;
     for(j=0;j<shapeNum; j++){
       D3d_translate(ms[j], minvs[j],0,0,-300);
-      D3d_rotate_y(ms[j], minvs[j],.2);
+      D3d_rotate_y(ms[j], minvs[j],i*.2);
       D3d_translate(ms[j], minvs[j],0,0,300);
     }
  

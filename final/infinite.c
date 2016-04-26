@@ -8,25 +8,21 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         100000
-#define DEPTH         3
-#define CHILDREN      5
-#define REFLECTIONS   1
+#define DEPTH         1
+#define CHILDREN      16
+#define REFLECTIONS   2
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
 double Tan_half_angle ;
-
-
 double light_in_eye_space[3] ;
 
 double eye[3];
-double V[4][4], Vi[4][4];
-
 
 double ms[SHOWN][4][4];
 double minvs[SHOWN][4][4];
 int shapeNum = 0;
-
+double offset = 0;
 double colors[SHOWN][3];
 double reflectivity[SHOWN];
 
@@ -50,14 +46,110 @@ void equa(double vals[4], double x, double y, double z, double rad, int pos, int
 
 }
 
+void spin(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double  temp = offset/10.0;
+  // printf("%lf \n",temp );
+  double pi = (2*M_PI*pos)/total;
+  vals[0] = x + cos(pi)*rad*1.5;
+  vals[1] = y + sin(pi)*rad*1.5;
+  vals[2] = z + (((double)pos/total)*(2*temp) -temp)*rad;
+  vals[3] = rad/3;
+}
+
+void spiral(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double u = (2.0*M_PI*pos)/(double)total;
+  double v = ((2.0*pos)/(double)total) - 1.0;
+  vals[3] = rad/3;
+  vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
+  vals[1] = y + rad*1.5*v;
+  vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+  printf("%lf , %lf , %lf \n",vals[0],vals[1],vals[2] );
+
+}
+
+void spaced(double vals[4], double x, double y, double z, double rad, int pos, int total){
+
+  int square = sqrt(total);
+
+  double u = (2*M_PI/square)*(pos%square);
+  double v = (2.0/square)*(pos/square) - 1;
+
+  // u = sqrt(1 - (u*u));
+  printf("\n");
+  printf("position = %d \n", pos);
+  printf("v = %lf , u = %lf \n", v, u);
+
+  vals[3] = rad/3;
+  vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
+  vals[1] = y + rad*1.5*v;
+  vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+  printf("%lf , %lf , %lf \n",vals[0],vals[1],vals[2] );
+
+}
+
+void test(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  printf("total = %d\n", total);
+  int square = ceil(sqrt(total));
+  printf("start \n");
+
+  // double u = (2*M_PI/square)*(pos%square);
+  // double v = (2.0/square)*(pos/square) - 1;
+  double totalDist = 0;
+  double levels[square];
+
+  int i;
+  int place = 0;
+  for(i=0;i<total;i+= square){
+    double u = (2*M_PI/square)*(i%square);
+    double v = (2.0/square)*(i/square) - 1;
+
+    printf("u = %lf, v - %lf\n",u,v );
+    levels[place] = 2.0*rad*sqrt(1 -(v*v))*sin(u);
+    totalDist += 2.0*rad*sqrt(1 -(v*v))*sin(u);
+    place++;
+  }
+
+  printf("totalDist = %lf , total = %d\n", totalDist, total);
+  double step = totalDist/(double)total;
+  int perLevel[square];
+  printf("step = %lf\n", step);
+  for(i = 0; i< square; i++){
+    printf("level rad = %lf \n",levels[i] );
+    perLevel[i] = (int)ceil(levels[i]/step) +1;
+  }
+
+  int level=0;
+  int count=0;
+  for(i = 0; i<square;i++){
+    printf("perlevel = %d \n",perLevel[level] );
+    count+=perLevel[level];
+    level++;
+  }
+  level--;
+  count -= perLevel[level];
+  int position = pos - count;
+
+  printf("level = %d , position = %d \n", level, position);
+  double u = (2*M_PI/square)*(position);
+  double v = (2.0/square)*(level) - 1;
+
+
+  printf("v = %lf , u = %lf \n", v, u);
+  printf("end\n");
+  printf("\n");
+  vals[3] = rad/3;
+  vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
+  vals[1] = y + rad*1.5*v;
+  vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+
+}
+
 
 void makemat(double m[4][4], double minv[4][4], double sx, double sy, double sz, 
 				double rz, double tx, double ty, double tz){
 	int num = 0 ; 
 	int tlist[7];
 	double plist[7];
-
-
 
 	tlist[num] = SX ; plist[num] =  sx ; num++ ;
 	tlist[num] = SY ; plist[num] =  sy ; num++ ;
@@ -354,9 +446,6 @@ void draw(char filename[100]){
       points[1][1] = j;
       points[1][2] = 300/Tan_half_angle;
 
-      D3d_mat_mult_pt(points[0],V,points[0]);
-      D3d_mat_mult_pt(points[1],V,points[1]);
-
       double intersect[3], normal[3];
 
       double color[3];
@@ -430,8 +519,12 @@ void fractal(SHAPE seed, int levels){
 int main(){
 
   char prefix[100];
-  printf("Enter file extension\n");
-  scanf("%s", prefix);
+
+prefix[0] = 't';
+prefix[1] = 'e';
+prefix[2] = 's';
+prefix[3] = 't';
+
   int i;
 
 
@@ -443,72 +536,44 @@ int main(){
 	Half_angle_degrees = 30;
 	Tan_half_angle = tan(Half_angle_degrees*M_PI/180) ;
 
- //  G_init_graphics(Half_window_size*2,Half_window_size*2);
-	// G_rgb(0,0,0) ;
- //  G_clear();
+  eye[0] = 0;
+  eye[1] = 0;
+  eye[2] = 0;
 
-  double eye[3],  coi[3] ,  up[3], t;
+  double color[3];
+  color[0] = 0;
+  color[1] = 0;
+  color[2] = 1;
 
-  int numframes = 200;
+  // calc fractal here if only once is needed
+    SHAPE seed = new_shape(0,0,300 ,30,test , color, .5,CHILDREN);
+   fractal(seed,DEPTH);
+
+  int numframes = 100;
    for(i=0;i<numframes;i++){
+    offset = (double)i;
 
-    // double V[4][4], Vi[4][4];
 
-    t = 2.0 * M_PI *i/numframes ; // goes from 0 to 1
-    // printf("%lf\n",t );
 
-    eye[0] = cos(M_PI*2*t) * 200 ; 
-    eye[1] = 150*t; 
-    eye[2] = sin(M_PI*2*t) * 200  ; 
+    //create fractal here if shape num is used in calculation 
+        // shapeNum = 0;
+   //  SHAPE seed = new_shape(0,0,300 ,30,spiral , color, .5,CHILDREN);
+   // fractal(seed,DEPTH);
 
-    coi[0] =  0 ;
-    coi[1] =  0 ; 
-    coi[2] =  300 ;
-
-    up[0]  = eye[0] ; 
-    up[1]  = eye[1] + 1 ;
-    up[2]  = eye[2] ; 
-
-    D3d_make_identity (V) ;
-    D3d_make_identity (Vi) ;
-
-    D3d_view (V, Vi,  eye,coi,up) ;
-
-    eye[0] = 0;
-    eye[1] = 0;
-    eye[2] = 0;
-
-    double color[3];
-    color[0] = 0;
-    color[1] = 0;
-    color[2] = 1;
-    SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .5,CHILDREN);
-
-    fractal(seed,DEPTH);
 
     int j;
-    // for(j=0;j<shapeNum; j++){
-    //   D3d_mat_mult(ms[j], V, ms[j]);
-    //   D3d_mat_mult(minvs[j], V, minvs[j]);
-    // }
-    
-    // printf("end fractal\n"); 
-
-    // G_wait_key();
-
-    // G_rgb(0,0,0);
-    // G_clear();
-    // G_wait_key();
+    for(j=0;j<shapeNum; j++){
+      D3d_translate(ms[j], minvs[j],0,0,-300);
+      D3d_rotate_y(ms[j], minvs[j],.2);
+      D3d_translate(ms[j], minvs[j],0,0,300);
+    }
+ 
   //=============================================================================
 
     char filename[100];
     sprintf(filename, "%s%04d.xwd", prefix, i);
     draw(filename);
     printf("Image %d \n", i);
-  //   G_save_image_to_file(filename);
-
-  // G_rgb(0,0,0);
-  // G_clear();
 
 //---------------------------------------------------------------------------
 }

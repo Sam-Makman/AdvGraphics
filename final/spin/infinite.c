@@ -8,9 +8,9 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         100000
-#define DEPTH         2
-#define CHILDREN      5
-#define REFLECTIONS   4
+#define DEPTH         1
+#define CHILDREN      10
+#define REFLECTIONS   2
 
 double Half_window_size = 350;
 double Half_angle_degrees ;
@@ -24,7 +24,7 @@ double eye[3];
 double ms[SHOWN][4][4];
 double minvs[SHOWN][4][4];
 int shapeNum = 0;
-
+double offset = 0;
 double colors[SHOWN][3];
 double reflectivity[SHOWN];
 
@@ -45,6 +45,36 @@ void equa(double vals[4], double x, double y, double z, double rad, int pos, int
   vals[1] = y + sin(pi)*rad*1.5;
   vals[2] = z + (((double)pos/total)*6 -3)*rad;
   vals[3] = rad/3;
+
+}
+
+void spin(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double  temp = offset/10.0;
+  // printf("%lf \n",temp );
+  double pi = (2*M_PI*pos)/total;
+  vals[0] = x + cos(pi)*rad*1.5;
+  vals[1] = y + sin(pi)*rad*1.5;
+  vals[2] = z + (((double)pos/total)*(2*temp) -temp)*rad;
+  vals[3] = rad/3;
+}
+
+void spiral(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double u = (2.0*M_PI*pos)/(double)total;
+  double v = ((2.0*pos)/(double)total) - 1.0;
+  vals[3] = rad/3;
+  vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
+  vals[1] = y + rad*1.5*v;
+  vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+  printf("%lf , %lf , %lf \n",vals[0],vals[1],vals[2] );
+
+}
+
+void test(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double pi = (2*M_PI*pos)/total;
+  vals[0] = x + cos(pi)*rad*1.5;
+  vals[1] = y + sin(pi)*rad*1.5;
+  vals[2] = z + sin(pi) *cos(pi) * rad*1.5;
+  vals[3] = rad/4;
 
 }
 
@@ -451,12 +481,21 @@ prefix[3] = 't';
   color[1] = 0;
   color[2] = 1;
 
-  SHAPE seed = new_shape(0,0,300 ,30,halfed , color, .5,CHILDREN);
-
-  fractal(seed,DEPTH);
+  // calc fractal here if only once is needed
+    SHAPE seed = new_shape(0,0,300 ,30,spiral , color, .5,CHILDREN);
+   fractal(seed,DEPTH);
 
   int numframes = 200;
    for(i=0;i<numframes;i++){
+    offset = (double)i;
+
+
+
+    //create fractal here if shape num is used in calculation 
+        // shapeNum = 0;
+   //  SHAPE seed = new_shape(0,0,300 ,30,spiral , color, .5,CHILDREN);
+   // fractal(seed,DEPTH);
+
 
     int j;
     for(j=0;j<shapeNum; j++){

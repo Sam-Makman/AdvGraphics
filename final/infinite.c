@@ -88,60 +88,41 @@ void spaced(double vals[4], double x, double y, double z, double rad, int pos, i
 }
 
 void test(double vals[4], double x, double y, double z, double rad, int pos, int total){
-  printf("total = %d\n", total);
-  int square = ceil(sqrt(total));
-  printf("start \n");
 
-  // double u = (2*M_PI/square)*(pos%square);
-  // double v = (2.0/square)*(pos/square) - 1;
-  double totalDist = 0;
-  double levels[square];
+  double area = (4*M_PI*(rad*rad))/(double)total;
+  double radius = sqrt(area/(2*M_PI));
+  double increment = radius/(M_PI*rad);
+  
+  int square = sqrt(total);
 
-  int i;
-  int place = 0;
-  for(i=0;i<total;i+= square){
-    double u = (2*M_PI/square)*(i%square);
-    double v = (2.0/square)*(i/square) - 1;
+  double u = increment*pos;
+  double v = 0;//(2.0)*((u/2*M_PI)/(2*M_PI)) - 1;
 
-    printf("u = %lf, v - %lf\n",u,v );
-    levels[place] = 2.0*rad*sqrt(1 -(v*v))*sin(u);
-    totalDist += 2.0*rad*sqrt(1 -(v*v))*sin(u);
-    place++;
-  }
-
-  printf("totalDist = %lf , total = %d\n", totalDist, total);
-  double step = totalDist/(double)total;
-  int perLevel[square];
-  printf("step = %lf\n", step);
-  for(i = 0; i< square; i++){
-    printf("level rad = %lf \n",levels[i] );
-    perLevel[i] = (int)ceil(levels[i]/step) +1;
-  }
-
-  int level=0;
-  int count=0;
-  for(i = 0; i<square;i++){
-    printf("perlevel = %d \n",perLevel[level] );
-    count+=perLevel[level];
-    level++;
-  }
-  level--;
-  count -= perLevel[level];
-  int position = pos - count;
-
-  printf("level = %d , position = %d \n", level, position);
-  double u = (2*M_PI/square)*(position);
-  double v = (2.0/square)*(level) - 1;
-
-
-  printf("v = %lf , u = %lf \n", v, u);
-  printf("end\n");
-  printf("\n");
+  printf("increment = %lf , u = %lf , v = %lf \n",increment, u, v );
+  
   vals[3] = rad/3;
   vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
-  vals[1] = y + rad*1.5*v;
+  vals[1] = y + rad*1.5*v;  
   vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+}
 
+void npoints(double vals[4], double x, double y, double z, double rad, int pos, int total){
+  double a = (4.0*M_PI*rad*rad)/(double)total;
+  double d = sqrt(a);
+  double Mo = ceil(M_PI/d);
+  double dt = M_PI/Mo;
+  double dy = a/dt;
+  double m = (double)(pos%total);
+  double V = (M_PI*(m+.5))/Mo;
+  double My = ceil((2*M_PI*sin(V))/dy);
+  double n = ceil(pos/total);
+  double U = (2*M_PI*n)/My;
+
+  printf("u = %lf , v = %lf\n", U,V );
+  vals[3] = rad/3;
+  vals[0] = x + rad*1.5*sqrt(1 -(V*V))*cos(U);
+  vals[1] = y + rad*1.5*V;  
+  vals[2] = z + rad*1.5*sqrt(1-(V*V))*sin(U);
 }
 
 
@@ -546,7 +527,7 @@ prefix[3] = 't';
   color[2] = 1;
 
   // calc fractal here if only once is needed
-    SHAPE seed = new_shape(0,0,300 ,30,test , color, .5,CHILDREN);
+    SHAPE seed = new_shape(0,0,300 ,30,npoints , color, .5,CHILDREN);
    fractal(seed,DEPTH);
 
   int numframes = 100;

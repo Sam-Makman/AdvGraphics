@@ -415,13 +415,7 @@ void fractal(SHAPE seed, int levels){
 
 int main(){
 
-  char prefix[100];
-  // printf("Enter file extension\n");
-  // scanf("%s", prefix);
-  prefix[0] = 't';
-  prefix[1] = 'e';
-  prefix[2] = 's';
-  prefix[3] = 't';
+  char prefix[100]= "infinte";
   int i;
 
     eye[0] = 0;

@@ -424,12 +424,9 @@ void fractal(SHAPE seed, int levels){
 
 int main(){
 
-  char prefix[100];
+  char prefix[100] = "xwdtest";
 
-prefix[0] = 't';
-prefix[1] = 'e';
-prefix[2] = 's';
-prefix[3] = 't';
+
 
   int i;
 

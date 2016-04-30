@@ -8,8 +8,8 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         100000
-#define DEPTH         1
-#define CHILDREN      16
+#define DEPTH         2
+#define CHILDREN      30
 #define REFLECTIONS   2
 
 double Half_window_size = 350;
@@ -57,12 +57,12 @@ void spin(double vals[4], double x, double y, double z, double rad, int pos, int
 }
 
 void spiral(double vals[4], double x, double y, double z, double rad, int pos, int total){
-  double u = (2.0*M_PI*pos)/(double)total;
+  double u = sqrt(total/2)*(2.0*M_PI*pos)/(double)total;
   double v = ((2.0*pos)/(double)total) - 1.0;
-  vals[3] = rad/3;
-  vals[0] = x + rad*1.5*sqrt(1 -(v*v))*cos(u);
-  vals[1] = y + rad*1.5*v;
-  vals[2] = z + rad*1.5*sqrt(1-(v*v))*sin(u);
+  vals[3] = rad/5;
+  vals[0] = x + rad*(1+(vals[3]/rad))*sqrt(1 -(v*v))*cos(u);
+  vals[1] = y + rad*(1+(vals[3]/rad))*v;
+  vals[2] = z + rad*(1+(vals[3]/rad))*sqrt(1-(v*v))*sin(u);
   printf("%lf , %lf , %lf \n",vals[0],vals[1],vals[2] );
 
 }
@@ -499,12 +499,7 @@ void fractal(SHAPE seed, int levels){
 
 int main(){
 
-  char prefix[100];
-
-prefix[0] = 't';
-prefix[1] = 'e';
-prefix[2] = 's';
-prefix[3] = 't';
+  char prefix[100] = "equadistant";
 
   int i;
 
@@ -527,7 +522,7 @@ prefix[3] = 't';
   color[2] = 1;
 
   // calc fractal here if only once is needed
-    SHAPE seed = new_shape(0,0,300 ,30,npoints , color, .5,CHILDREN);
+    SHAPE seed = new_shape(0,0,300 ,30,spiral , color, .5,CHILDREN);
    fractal(seed,DEPTH);
 
   int numframes = 100;

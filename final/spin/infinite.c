@@ -8,7 +8,7 @@
 #define MAX_DIFFUSE   0.5 
 #define SPECPOW       50 
 #define SHOWN         100000
-#define DEPTH         1
+#define DEPTH         3
 #define CHILDREN      10
 #define REFLECTIONS   2
 
